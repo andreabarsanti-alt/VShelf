@@ -176,18 +176,12 @@ main{padding-bottom:60px;}
   background:linear-gradient(155deg,#241d16,#151009);
 }
 .cover.art-fail .cover-fallback{display:flex;}
-.fmt-badge{
-  position:absolute; top:8px; left:8px; z-index:2;
-  background:var(--rust); color:#fff0e6; font-size:10.5px; font-weight:700; letter-spacing:.4px;
-  padding:3px 6px; border-radius:5px; opacity:0; transition:opacity .15s;
-}
-.record:hover .fmt-badge, .record:focus-within .fmt-badge{opacity:1;}
 .cover-actions{
   position:absolute; top:7px; right:7px; z-index:2; display:flex; gap:5px;
   opacity:0; transition:opacity .15s;
 }
 .record:hover .cover-actions, .record:focus-within .cover-actions{opacity:1;}
-@media (hover:none){ .cover-actions,.fmt-badge{opacity:.92;} }
+@media (hover:none){ .cover-actions{opacity:.92;} }
 .cover-caption{
   position:absolute; left:0; right:0; bottom:0; z-index:2;
   padding:20px 9px 8px;
@@ -269,6 +263,15 @@ main{padding-bottom:60px;}
 .pick-item strong, .dg-item span{font-size:11px; line-height:1.3; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
 .pick-item small{font-size:10px; color:var(--muted);}
 .am-loading, .am-empty{color:var(--muted); font-size:13px; padding:16px 4px; text-align:center;}
+#am-search-context{margin-top:10px;}
+#am-search-results.list-mode{display:flex; flex-direction:column; gap:6px;}
+.artist-item{
+  background:var(--bg2); border:1px solid var(--border); border-radius:8px; padding:9px 12px;
+  cursor:pointer; text-align:left; display:flex; justify-content:space-between; align-items:baseline; gap:10px; color:var(--ink);
+}
+.artist-item:hover{border-color:var(--accent);}
+.artist-item strong{font-size:13px;}
+.artist-item small{font-size:11px; color:var(--muted); white-space:nowrap;}
 
 .profile-row, #profiles-list .profile-row{
   display:flex; justify-content:space-between; align-items:center;
@@ -382,12 +385,13 @@ main{padding-bottom:60px;}
     <div class="tab-panel hidden" id="tab-search">
       <div class="inline-row">
         <input type="text" id="am-search-q" placeholder="Album or artist…" onkeydown="if(event.key==='Enter'){event.preventDefault();doAppleSearch();}">
-        <select id="am-search-entity" onchange="amSearchEntity=this.value">
+        <select id="am-search-entity" onchange="amSearchEntity=this.value; document.getElementById('am-search-results').innerHTML=''; clearAmContext();">
           <option value="album">Albums</option>
-          <option value="song">Songs</option>
+          <option value="artist">Artists</option>
         </select>
         <button type="button" class="btn" onclick="doAppleSearch()">Search</button>
       </div>
+      <div id="am-search-context"></div>
       <div id="am-search-results"></div>
     </div>
 
@@ -411,7 +415,7 @@ main{padding-bottom:60px;}
     <div class="field-row">
       <div class="field" style="flex:2"><label>Apple Music Link *</label><input type="url" id="rf-link" placeholder="https://music.apple.com/…"></div>
       <div class="field" style="flex:1"><label>Format</label>
-        <select id="rf-type"><option value="album">LP (album)</option><option value="song">45 (song)</option></select>
+        <select id="rf-type"><option value="album">Album</option><option value="song">Song</option></select>
       </div>
     </div>
     <div class="field">
@@ -719,14 +723,12 @@ function filteredSortedRecords() {
 
 function recordCardHTML(r) {
   const hasArt = !!r.artworkUrl;
-  const badge = r.type === 'song' ? '45' : 'LP';
   return `
     <div class="record" data-id="${esc(r.id)}">
       <div class="vinyl-peek" aria-hidden="true"></div>
       <div class="cover ${hasArt ? '' : 'art-fail'}" onclick="openRecord('${esc(r.id)}')" tabindex="0">
         ${hasArt ? `<img src="${esc(r.artworkUrl)}" alt="" loading="lazy" onerror="this.parentElement.classList.add('art-fail')">` : ''}
         <div class="cover-fallback">${esc(initials(r.title))}</div>
-        <span class="fmt-badge">${badge}</span>
         <div class="cover-actions">
           <button type="button" class="icon-btn" onclick="event.stopPropagation(); openEditModal('${esc(r.id)}')" title="Edit">✎</button>
           <button type="button" class="icon-btn danger" onclick="event.stopPropagation(); deleteRecord('${esc(r.id)}')" title="Remove">🗑</button>
@@ -778,6 +780,7 @@ function openRecord(id) {
 let editingId = null;
 let amSearchEntity = 'album';
 let amSearchResults = [];
+let amArtistResults = [];
 let discogsResults = [];
 
 function setAddTab(tab) {
@@ -793,6 +796,7 @@ function resetRecordForm() {
   document.getElementById('am-link-status').textContent = '';
   document.getElementById('am-search-q').value = '';
   document.getElementById('am-search-results').innerHTML = '';
+  clearAmContext();
   updateArtworkPreview();
   setAddTab('link');
 }
@@ -913,13 +917,21 @@ async function fetchFromLink() {
     document.getElementById('rf-link').value = raw;
   }
 }
+// Album mode is a plain catalog term search. Artist mode searches artist names instead —
+// picking one then lists that artist's real catalog via a lookup (pickArtist), since a
+// free-text title search alone can be surprisingly unreliable for well-known albums (Apple's
+// relevance ranking can bury the actual record under a pile of unrelated same-titled singles).
+function clearAmContext() { document.getElementById('am-search-context').innerHTML = ''; }
+
 async function doAppleSearch() {
   const q = document.getElementById('am-search-q').value.trim();
   const list = document.getElementById('am-search-results');
+  clearAmContext();
   if (!q) { list.innerHTML = ''; return; }
+  if (amSearchEntity === 'artist') return doArtistSearch(q);
   list.innerHTML = '<div class="am-loading">Searching…</div>';
   try {
-    const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(q)}&entity=${amSearchEntity}&limit=24`);
+    const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(q)}&media=music&entity=album&limit=24`);
     if (!res.ok) throw new Error(`iTunes search ${res.status}`);
     const data = await res.json();
     amSearchResults = data.results || [];
@@ -930,6 +942,7 @@ async function doAppleSearch() {
 }
 function renderAmSearchResults() {
   const list = document.getElementById('am-search-results');
+  list.classList.remove('list-mode');
   if (!amSearchResults.length) { list.innerHTML = '<div class="am-empty">No results</div>'; return; }
   list.innerHTML = amSearchResults.map((item, i) => {
     const title = item.collectionName || item.trackName || '';
@@ -951,6 +964,50 @@ function pickAmResult(i) {
   document.getElementById('rf-type').value = item.wrapperType === 'track' ? 'song' : 'album';
   updateArtworkPreview();
   toast(`Selected "${item.collectionName || item.trackName}" — review details below and Save`);
+}
+
+async function doArtistSearch(q) {
+  const list = document.getElementById('am-search-results');
+  list.innerHTML = '<div class="am-loading">Searching…</div>';
+  try {
+    const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(q)}&entity=musicArtist&limit=12`);
+    if (!res.ok) throw new Error(`iTunes search ${res.status}`);
+    const data = await res.json();
+    amArtistResults = data.results || [];
+    renderArtistResults();
+  } catch (err) {
+    list.innerHTML = `<div class="am-empty">Search failed: ${esc(err.message)}</div>`;
+  }
+}
+function renderArtistResults() {
+  clearAmContext();
+  const list = document.getElementById('am-search-results');
+  list.classList.add('list-mode');
+  if (!amArtistResults.length) { list.innerHTML = '<div class="am-empty">No artists found</div>'; return; }
+  list.innerHTML = amArtistResults.map((a, i) => `
+    <button type="button" class="artist-item" onclick="pickArtist(${i})">
+      <strong>${esc(a.artistName)}</strong>
+      <small>${esc(a.primaryGenreName || '')}</small>
+    </button>`).join('');
+}
+async function pickArtist(i) {
+  const artist = amArtistResults[i];
+  if (!artist) return;
+  const list = document.getElementById('am-search-results');
+  list.classList.remove('list-mode');
+  list.innerHTML = '<div class="am-loading">Loading catalog…</div>';
+  try {
+    const res = await fetch(`https://itunes.apple.com/lookup?id=${encodeURIComponent(artist.artistId)}&entity=album&limit=200`);
+    if (!res.ok) throw new Error(`iTunes lookup ${res.status}`);
+    const data = await res.json();
+    amSearchResults = (data.results || []).filter(r => r.wrapperType === 'collection');
+    document.getElementById('am-search-context').innerHTML =
+      `<button type="button" class="btn ghost" style="font-size:12px;padding:5px 10px;margin-bottom:8px;" onclick="renderArtistResults()">← Back to artists</button>
+       <div class="hint" style="margin:-2px 0 8px;">Albums by ${esc(artist.artistName)}</div>`;
+    renderAmSearchResults();
+  } catch (err) {
+    list.innerHTML = `<div class="am-empty">Catalog lookup failed: ${esc(err.message)}</div>`;
+  }
 }
 
 // ─────────────────────────────────────────
