@@ -1,0 +1,1147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>vShelf</title>
+<meta name="description" content="A virtual vinyl shelf — collect Apple Music albums and songs as records on a shelf.">
+<meta name="theme-color" content="#14100c">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%92%BF%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#14100c;
+  --bg2:#1b1611;
+  --panel:#201a14;
+  --wood:#7a4c2c;
+  --wood-dark:#3f2414;
+  --ink:#f3ead9;
+  --muted:#b9a68d;
+  --muted-dim:#8a7a65;
+  --accent:#e0a458;
+  --accent-ink:#221507;
+  --rust:#c65b3f;
+  --danger:#d1543f;
+  --border:rgba(255,255,255,.09);
+  --border-soft:rgba(255,255,255,.05);
+  --cover:150px;
+  --gap:26px;
+  --shelf-h:12px;
+  --radius:10px;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:var(--bg);
+  color:var(--ink);
+  font-family:'Inter',system-ui,sans-serif;
+  min-height:100vh;
+  -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3{font-family:'Fraunces',serif;font-weight:600;margin:0;}
+a{color:var(--accent);}
+button{font-family:inherit;}
+::selection{background:var(--accent);color:var(--accent-ink);}
+
+/* ── Header ───────────────────────────── */
+header{
+  position:sticky; top:0; z-index:40;
+  background:linear-gradient(180deg,var(--bg2),rgba(27,22,17,.96));
+  border-bottom:1px solid var(--border);
+  backdrop-filter:blur(6px);
+  padding:12px 20px;
+  display:flex; align-items:center; gap:12px; flex-wrap:wrap;
+}
+.brand{display:flex; align-items:center; gap:9px; margin-right:4px;}
+.brand .disc{
+  width:30px; height:30px; border-radius:50%;
+  background:repeating-radial-gradient(circle at center,#0c0c0c 0 2px,#242018 2px 4px);
+  box-shadow:inset 0 0 0 8px var(--rust), inset 0 0 0 10px #0c0c0c;
+  flex:none;
+}
+.brand h1{font-size:21px; letter-spacing:.2px; color:var(--ink);}
+.brand h1 span{color:var(--accent);}
+
+select, input[type=text], input[type=search], input[type=url]{
+  background:var(--panel);
+  border:1px solid var(--border);
+  color:var(--ink);
+  border-radius:8px;
+  padding:8px 11px;
+  font-size:14px;
+  font-family:inherit;
+  outline:none;
+}
+select:focus, input:focus{border-color:var(--accent);}
+select{-webkit-appearance:none; appearance:none; cursor:pointer; padding-right:26px;
+  background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);
+  background-position:calc(100% - 14px) center, calc(100% - 9px) center; background-size:5px 5px; background-repeat:no-repeat;}
+
+#profile-select{max-width:150px;}
+
+.hdr-search{flex:1 1 160px; min-width:120px; max-width:280px; position:relative;}
+.hdr-search input{width:100%;}
+
+.hdr-actions{display:flex; align-items:center; gap:8px; margin-left:auto; flex-wrap:wrap;}
+
+button.btn{
+  display:inline-flex; align-items:center; gap:6px;
+  background:var(--panel); color:var(--ink);
+  border:1px solid var(--border); border-radius:8px;
+  padding:8px 13px; font-size:13.5px; font-weight:500; cursor:pointer;
+  transition:background .15s, border-color .15s, transform .1s;
+  white-space:nowrap;
+}
+button.btn:hover{border-color:var(--accent); background:#241c14;}
+button.btn:active{transform:translateY(1px);}
+button.btn.primary{background:var(--accent); color:var(--accent-ink); border-color:var(--accent); font-weight:600;}
+button.btn.primary:hover{background:#eab269;}
+button.btn.ghost{background:transparent;}
+button.btn:disabled{opacity:.5; cursor:default;}
+button.icon-btn{
+  background:rgba(20,16,12,.72); border:1px solid rgba(255,255,255,.12); color:var(--ink);
+  width:28px; height:28px; border-radius:7px; display:inline-flex; align-items:center; justify-content:center;
+  cursor:pointer; font-size:14px; line-height:1; backdrop-filter:blur(2px);
+}
+button.icon-btn:hover{background:rgba(20,16,12,.92);}
+button.icon-btn.danger:hover{background:var(--danger); border-color:var(--danger);}
+
+.more-wrap{position:relative;}
+#more-menu{
+  position:absolute; right:0; top:calc(100% + 8px);
+  background:var(--panel); border:1px solid var(--border); border-radius:10px;
+  min-width:210px; padding:6px; display:none; flex-direction:column; gap:2px;
+  box-shadow:0 14px 30px rgba(0,0,0,.5); z-index:50;
+}
+#more-menu.open{display:flex;}
+#more-menu button{
+  background:none; border:none; color:var(--ink); text-align:left; padding:9px 10px;
+  border-radius:7px; cursor:pointer; font-size:13.5px; display:flex; gap:8px; align-items:center;
+}
+#more-menu button:hover{background:rgba(255,255,255,.06);}
+#more-menu hr{border:none; border-top:1px solid var(--border-soft); margin:4px 2px;}
+
+/* ── Toolbar (filters) ───────────────────────────── */
+.toolbar{
+  display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+  padding:14px 22px 4px;
+}
+.toolbar select{font-size:13px; padding:7px 26px 7px 10px;}
+#shelf-count{color:var(--muted); font-size:13px; margin-left:2px;}
+
+/* ── Shelf ───────────────────────────── */
+main{padding-bottom:60px;}
+.shelf-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(var(--cover),1fr));
+  gap:var(--gap);
+  padding:22px 22px calc(var(--gap) + var(--shelf-h) + 4px);
+  background-image:repeating-linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent calc(var(--cover) + var(--gap)*0.42),
+    var(--wood-dark) calc(var(--cover) + var(--gap)*0.42),
+    var(--wood) calc(var(--cover) + var(--gap)*0.42 + 3px),
+    var(--wood) calc(var(--cover) + var(--gap)*0.42 + var(--shelf-h)),
+    var(--wood-dark) calc(var(--cover) + var(--gap)*0.42 + var(--shelf-h) + 2px),
+    transparent calc(var(--cover) + var(--gap)*0.42 + var(--shelf-h) + 3px),
+    transparent calc(var(--cover) + var(--gap))
+  );
+  background-size:100% calc(var(--cover) + var(--gap));
+  background-position:0 calc(22px - var(--gap)*0.42);
+}
+.record{position:relative;}
+.vinyl-peek{
+  position:absolute; top:9%; right:-9%; width:88%; aspect-ratio:1/1;
+  border-radius:50%; z-index:0; pointer-events:none;
+  background:repeating-radial-gradient(circle at center,#0a0a0a 0 3px,#1e1a15 3px 6px);
+  box-shadow:inset 0 0 0 15px #17130f, inset 0 0 0 17px #322418, 0 8px 14px rgba(0,0,0,.55);
+}
+.cover{
+  position:relative; z-index:1;
+  aspect-ratio:1/1; border-radius:var(--radius); overflow:hidden;
+  background:#161310;
+  box-shadow:0 12px 16px -8px rgba(0,0,0,.6), 0 2px 0 rgba(0,0,0,.35);
+  cursor:pointer;
+  transition:transform .18s ease;
+}
+.cover:hover{transform:translateY(-5px) rotate(-.3deg);}
+.cover img{width:100%; height:100%; object-fit:cover; display:block;}
+.cover.art-fail img{display:none;}
+.cover-fallback{
+  display:none; position:absolute; inset:0; align-items:center; justify-content:center;
+  font-family:'Fraunces',serif; font-weight:600; font-size:34px; color:var(--muted-dim);
+  background:linear-gradient(155deg,#241d16,#151009);
+}
+.cover.art-fail .cover-fallback{display:flex;}
+.fmt-badge{
+  position:absolute; top:8px; left:8px; z-index:2;
+  background:var(--rust); color:#fff0e6; font-size:10.5px; font-weight:700; letter-spacing:.4px;
+  padding:3px 6px; border-radius:5px; opacity:0; transition:opacity .15s;
+}
+.record:hover .fmt-badge, .record:focus-within .fmt-badge{opacity:1;}
+.cover-actions{
+  position:absolute; top:7px; right:7px; z-index:2; display:flex; gap:5px;
+  opacity:0; transition:opacity .15s;
+}
+.record:hover .cover-actions, .record:focus-within .cover-actions{opacity:1;}
+@media (hover:none){ .cover-actions,.fmt-badge{opacity:.92;} }
+.cover-caption{
+  position:absolute; left:0; right:0; bottom:0; z-index:2;
+  padding:20px 9px 8px;
+  background:linear-gradient(to top, rgba(6,4,2,.92), rgba(6,4,2,.55) 60%, transparent);
+  display:flex; flex-direction:column; gap:1px;
+}
+.cover-caption strong{font-size:12.5px; line-height:1.25; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.cover-caption span{font-size:11px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+
+.state-msg{
+  display:flex; flex-direction:column; align-items:center; gap:12px; text-align:center;
+  padding:70px 20px; color:var(--muted);
+}
+.state-msg.hidden{display:none;}
+.state-msg .big{font-size:44px;}
+.state-msg h2{color:var(--ink); font-size:22px;}
+.state-msg p{margin:0; max-width:360px; font-size:14px; line-height:1.5;}
+
+/* ── Sync banner ───────────────────────────── */
+#sync-banner{
+  background:#2c2013; border-bottom:1px solid var(--border);
+  color:var(--ink); padding:10px 22px; display:flex; gap:12px; align-items:center; flex-wrap:wrap; font-size:13.5px;
+}
+#sync-banner.hidden{display:none;}
+#sync-banner button{margin-left:4px;}
+
+/* ── Modals ───────────────────────────── */
+.modal{position:fixed; inset:0; z-index:100; display:none; align-items:flex-start; justify-content:center; padding:5vh 16px; overflow-y:auto;}
+.modal.open{display:flex;}
+.modal .backdrop{position:fixed; inset:0; background:rgba(8,6,4,.66); backdrop-filter:blur(2px);}
+.modal-box{
+  position:relative; background:var(--panel); border:1px solid var(--border);
+  border-radius:14px; width:100%; max-width:520px; padding:22px;
+  box-shadow:0 30px 60px rgba(0,0,0,.5);
+}
+.modal-box.wide{max-width:640px;}
+.modal-box h3{font-size:19px; margin-bottom:16px; display:flex; justify-content:space-between; align-items:center;}
+.modal-close{background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;line-height:1;padding:2px 4px;}
+.modal-close:hover{color:var(--ink);}
+.field{margin-bottom:13px;}
+.field label{display:block; font-size:12.5px; color:var(--muted); margin-bottom:5px; font-weight:500;}
+.field input, .field select, .field textarea{width:100%;}
+.field-row{display:flex; gap:10px;}
+.field-row .field{flex:1;}
+.hint{font-size:11.5px; color:var(--muted-dim); margin-top:4px;}
+.modal-footer{display:flex; justify-content:flex-end; gap:8px; margin-top:18px; padding-top:16px; border-top:1px solid var(--border-soft);}
+.modal-footer .spacer{flex:1;}
+
+/* Tabs inside add-record modal */
+.tabs{display:flex; gap:6px; margin-bottom:16px; background:var(--bg2); padding:4px; border-radius:9px;}
+.tabs button{flex:1; background:none; border:none; color:var(--muted); padding:8px; border-radius:6px; font-size:13px; font-weight:600; cursor:pointer;}
+.tabs button.active{background:var(--accent); color:var(--accent-ink);}
+.tab-panel.hidden{display:none;}
+.inline-row{display:flex; gap:8px;}
+.inline-row input{flex:1;}
+#am-link-status{font-size:12.5px; color:var(--muted); margin-top:7px; min-height:16px;}
+
+.art-preview-row{display:flex; gap:12px; align-items:flex-start;}
+.art-preview{
+  width:64px; height:64px; border-radius:8px; flex:none; overflow:hidden;
+  background:linear-gradient(155deg,#241d16,#151009);
+  display:flex; align-items:center; justify-content:center; color:var(--muted-dim); font-size:20px;
+}
+.art-preview img{width:100%; height:100%; object-fit:cover;}
+.art-preview-fields{flex:1;}
+
+.divider-label{font-size:11px; text-transform:uppercase; letter-spacing:.6px; color:var(--muted-dim); margin:18px 0 10px; font-weight:600;}
+
+#am-search-results, #discogs-results{
+  display:grid; grid-template-columns:repeat(auto-fill,minmax(96px,1fr)); gap:9px;
+  max-height:260px; overflow-y:auto; padding-right:2px; margin-top:10px;
+}
+.pick-item, .dg-item{
+  background:var(--bg2); border:1px solid var(--border); border-radius:8px; padding:6px;
+  cursor:pointer; text-align:left; display:flex; flex-direction:column; gap:5px; color:var(--ink);
+}
+.pick-item:hover, .dg-item:hover{border-color:var(--accent);}
+.pick-item img, .dg-item img{width:100%; aspect-ratio:1/1; object-fit:cover; border-radius:5px; background:#111;}
+.pick-item strong, .dg-item span{font-size:11px; line-height:1.3; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.pick-item small{font-size:10px; color:var(--muted);}
+.am-loading, .am-empty{color:var(--muted); font-size:13px; padding:16px 4px; text-align:center;}
+
+.profile-row, #profiles-list .profile-row{
+  display:flex; justify-content:space-between; align-items:center;
+  padding:8px 10px; border:1px solid var(--border-soft); border-radius:8px; margin-bottom:6px; font-size:13.5px;
+}
+.profile-row code{color:var(--muted-dim); font-size:11px; margin-left:6px;}
+.new-profile-row{display:flex; gap:8px; margin-top:12px;}
+.new-profile-row input{flex:1;}
+
+#toast{
+  position:fixed; left:50%; bottom:26px; transform:translateX(-50%) translateY(20px);
+  background:#241c14; color:var(--ink); border:1px solid var(--border);
+  padding:11px 18px; border-radius:9px; font-size:13.5px; z-index:200;
+  opacity:0; pointer-events:none; transition:opacity .2s, transform .2s;
+  box-shadow:0 12px 26px rgba(0,0,0,.4); max-width:88vw; text-align:center;
+}
+#toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+
+@media (max-width:600px){
+  :root{--cover:118px; --gap:20px;}
+  header{padding:10px 14px;}
+  .brand h1{font-size:18px;}
+  .toolbar{padding:12px 14px 2px;}
+  .shelf-grid{padding:16px 14px calc(var(--gap) + var(--shelf-h) + 4px);}
+  .hdr-search{max-width:none; order:5; flex-basis:100%;}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <div class="disc"></div>
+    <h1>v<span>Shelf</span></h1>
+  </div>
+  <select id="profile-select" onchange="switchProfile(this.value)"></select>
+  <div class="hdr-search">
+    <input type="search" id="search-input" placeholder="Search title, artist, tag…" oninput="setSearch(this.value)">
+  </div>
+  <div class="hdr-actions">
+    <button type="button" class="btn primary" onclick="openAddModal()">＋ Add Record</button>
+    <button type="button" class="btn" id="btn-push" onclick="pushToGithub()">⬆ Push</button>
+    <button type="button" class="btn" id="btn-pull" onclick="pullFromGithub()">⬇ Pull</button>
+    <div class="more-wrap">
+      <button type="button" class="btn ghost" id="more-btn" onclick="toggleMoreMenu()">⋯</button>
+      <div id="more-menu">
+        <button type="button" id="btn-force-refresh" onclick="forceRefresh()">🔄 Refresh from repo</button>
+        <button type="button" onclick="exportData()">⬇ Export JSON</button>
+        <button type="button" onclick="triggerImport()">⬆ Import JSON</button>
+        <hr>
+        <button type="button" onclick="openDiscogsSettingsModal()">💿 Discogs token…</button>
+        <button type="button" onclick="openGithubConfigModal('push')">⚙ GitHub settings…</button>
+        <hr>
+        <button type="button" onclick="openProfilesModal()">✎ Edit profiles…</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div id="sync-banner" class="hidden">
+  <span id="sync-msg"></span>
+  <button type="button" class="btn primary" onclick="acceptSync()">Load repo version</button>
+  <button type="button" class="btn ghost" onclick="dismissSync()">Dismiss</button>
+</div>
+
+<div class="toolbar">
+  <span id="shelf-count">0 records</span>
+  <select id="tag-filter" onchange="setTagFilter(this.value)"><option value="">All tags</option></select>
+  <select id="sort-select" onchange="setSortMode(this.value)">
+    <option value="added_desc">Recently added</option>
+    <option value="added_asc">Oldest added</option>
+    <option value="title_asc">Title A–Z</option>
+    <option value="artist_asc">Artist A–Z</option>
+  </select>
+</div>
+
+<main>
+  <div id="shelf-grid" class="shelf-grid"></div>
+  <div id="empty-state" class="state-msg hidden">
+    <div class="big">💿</div>
+    <h2>Your shelf is empty</h2>
+    <p>Paste an Apple Music link or search the catalog to add your first record.</p>
+    <button type="button" class="btn primary" onclick="openAddModal()">＋ Add Record</button>
+  </div>
+  <div id="no-results-state" class="state-msg hidden">
+    <div class="big">🔍</div>
+    <h2>No matches</h2>
+    <p>Nothing on the shelf matches that search or filter.</p>
+  </div>
+</main>
+
+<!-- Add / Edit record modal -->
+<div class="modal" id="record-modal">
+  <div class="backdrop" onclick="closeModal('record-modal')"></div>
+  <div class="modal-box wide">
+    <h3><span id="record-modal-title">Add Record</span><button type="button" class="modal-close" onclick="closeModal('record-modal')">✕</button></h3>
+
+    <div class="tabs">
+      <button type="button" id="tab-btn-link" class="active" onclick="setAddTab('link')">🔗 Paste Link</button>
+      <button type="button" id="tab-btn-search" onclick="setAddTab('search')">🔎 Search Apple Music</button>
+    </div>
+
+    <div class="tab-panel" id="tab-link">
+      <div class="inline-row">
+        <input type="url" id="am-link-input" placeholder="https://music.apple.com/us/album/…">
+        <button type="button" class="btn" onclick="fetchFromLink()">Fetch</button>
+      </div>
+      <div id="am-link-status"></div>
+    </div>
+
+    <div class="tab-panel hidden" id="tab-search">
+      <div class="inline-row">
+        <input type="text" id="am-search-q" placeholder="Album or artist…" onkeydown="if(event.key==='Enter'){event.preventDefault();doAppleSearch();}">
+        <select id="am-search-entity" onchange="amSearchEntity=this.value">
+          <option value="album">Albums</option>
+          <option value="song">Songs</option>
+        </select>
+        <button type="button" class="btn" onclick="doAppleSearch()">Search</button>
+      </div>
+      <div id="am-search-results"></div>
+    </div>
+
+    <div class="divider-label">Record details</div>
+
+    <div class="art-preview-row">
+      <div class="art-preview" id="art-preview">💿</div>
+      <div class="art-preview-fields">
+        <div class="field">
+          <label>Artwork URL</label>
+          <input type="text" id="rf-artwork" placeholder="Filled automatically, or paste your own" oninput="updateArtworkPreview()">
+        </div>
+        <button type="button" class="btn ghost" style="font-size:12px;padding:6px 10px;" onclick="searchDiscogsCovers()">💿 Try Discogs cover</button>
+      </div>
+    </div>
+
+    <div class="field-row">
+      <div class="field"><label>Title *</label><input type="text" id="rf-title" placeholder="Album or song title"></div>
+      <div class="field"><label>Artist</label><input type="text" id="rf-artist" placeholder="Artist name"></div>
+    </div>
+    <div class="field-row">
+      <div class="field" style="flex:2"><label>Apple Music Link *</label><input type="url" id="rf-link" placeholder="https://music.apple.com/…"></div>
+      <div class="field" style="flex:1"><label>Format</label>
+        <select id="rf-type"><option value="album">LP (album)</option><option value="song">45 (song)</option></select>
+      </div>
+    </div>
+    <div class="field">
+      <label>Tags</label>
+      <input type="text" id="rf-tags" list="tag-list" placeholder="jazz, 1970s, favorite…">
+      <datalist id="tag-list"></datalist>
+    </div>
+
+    <div class="modal-footer">
+      <button type="button" class="btn danger" id="rf-delete-btn" style="display:none;background:transparent;border-color:var(--danger);color:var(--danger);" onclick="deleteRecord(editingId, true)">🗑 Remove</button>
+      <span class="spacer"></span>
+      <button type="button" class="btn ghost" onclick="closeModal('record-modal')">Cancel</button>
+      <button type="button" class="btn primary" onclick="saveRecordForm()">Save to shelf</button>
+    </div>
+  </div>
+</div>
+
+<!-- Discogs cover picker -->
+<div class="modal" id="discogs-modal">
+  <div class="backdrop" onclick="closeModal('discogs-modal')"></div>
+  <div class="modal-box wide">
+    <h3>Discogs covers<button type="button" class="modal-close" onclick="closeModal('discogs-modal')">✕</button></h3>
+    <p class="hint" style="margin-bottom:4px;">Vinyl release scans from Discogs — pick one to use as this record's cover.</p>
+    <div id="discogs-results"></div>
+  </div>
+</div>
+
+<!-- Discogs settings -->
+<div class="modal" id="discogs-settings-modal">
+  <div class="backdrop" onclick="closeModal('discogs-settings-modal')"></div>
+  <div class="modal-box">
+    <h3>Discogs<button type="button" class="modal-close" onclick="closeModal('discogs-settings-modal')">✕</button></h3>
+    <div class="field">
+      <label>Personal access token (optional)</label>
+      <input type="text" id="discogs-token-input" placeholder="Raises the search rate limit">
+      <p class="hint">Cover search works without one, just rate-limited. Get a token from your Discogs account → Settings → Developers.</p>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn ghost" onclick="closeModal('discogs-settings-modal')">Cancel</button>
+      <button type="button" class="btn primary" onclick="saveDiscogsToken()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- GitHub config -->
+<div class="modal" id="github-modal">
+  <div class="backdrop" onclick="closeModal('github-modal')"></div>
+  <div class="modal-box">
+    <h3 id="github-modal-title">Push to GitHub<button type="button" class="modal-close" onclick="closeModal('github-modal')">✕</button></h3>
+    <div class="field"><label>Personal access token</label><input type="text" id="gh-token" placeholder="ghp_…"></div>
+    <div class="field-row">
+      <div class="field"><label>Owner</label><input type="text" id="gh-owner"></div>
+      <div class="field"><label>Repo</label><input type="text" id="gh-repo"></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Branch</label><input type="text" id="gh-branch" value="main"></div>
+      <div class="field"><label>File path</label><input type="text" id="gh-path"></div>
+    </div>
+    <p class="hint">Needs a fine-grained token with Contents read/write on this repo.</p>
+    <div class="modal-footer">
+      <button type="button" class="btn ghost" onclick="clearGithubConfig()">Clear</button>
+      <span class="spacer"></span>
+      <button type="button" class="btn ghost" onclick="closeModal('github-modal')">Cancel</button>
+      <button type="button" class="btn primary" id="gh-save-btn" onclick="saveGithubConfig()">Save & Push</button>
+    </div>
+  </div>
+</div>
+
+<!-- Profiles -->
+<div class="modal" id="profiles-modal">
+  <div class="backdrop" onclick="closeModal('profiles-modal')"></div>
+  <div class="modal-box">
+    <h3>Edit profiles<button type="button" class="modal-close" onclick="closeModal('profiles-modal')">✕</button></h3>
+    <div id="profiles-list"></div>
+    <div class="new-profile-row">
+      <input type="text" id="new-profile-name" placeholder="New profile name…" onkeydown="if(event.key==='Enter'){event.preventDefault();addProfile();}">
+      <button type="button" class="btn primary" onclick="addProfile()">Add</button>
+    </div>
+    <p class="hint" style="margin-top:12px;">Each profile is its own shelf, own seed file (<code>vshelf_&lt;id&gt;.json</code>), own GitHub push target.</p>
+  </div>
+</div>
+
+<input type="file" id="import-file" accept="application/json" style="display:none" onchange="handleImportFile(event)">
+<div id="toast"></div>
+
+<script>
+'use strict';
+
+// ─────────────────────────────────────────
+// PROFILE (URL ?profile=name) — same pattern as Repertoire: namespaces storage key,
+// seed filename and GitHub config per profile; the registry of which profiles exist
+// lives outside that namespacing so every profile's page load can see it.
+// ─────────────────────────────────────────
+const PROFILE     = new URLSearchParams(location.search).get('profile') || 'main';
+const STORAGE_KEY = 'vshelf_v1_' + PROFILE;
+const SEED_FILE   = 'vshelf_' + PROFILE + '.json';
+const GH_CFG_KEY  = 'vshelf_github_config_' + PROFILE;
+const DISCOGS_TOKEN_KEY = 'vshelf_discogs_token'; // global — one Discogs account, not per-shelf
+
+const PROFILES_KEY = 'vshelf_profiles';
+const DEFAULT_PROFILES = [{ id: 'main', name: 'Main Shelf' }];
+
+function getProfiles() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(PROFILES_KEY) || 'null');
+    if (Array.isArray(saved) && saved.length) return saved;
+  } catch {}
+  return DEFAULT_PROFILES;
+}
+function saveProfiles(list) { localStorage.setItem(PROFILES_KEY, JSON.stringify(list)); }
+function slugifyProfile(name) {
+  return name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '') || 'profile';
+}
+function renderProfileSelect() {
+  const sel = document.getElementById('profile-select');
+  let list = getProfiles();
+  if (!list.some(p => p.id === PROFILE)) list = [{ id: PROFILE, name: PROFILE }, ...list];
+  sel.innerHTML = list.map(p => `<option value="${esc(p.id)}">${esc(p.name)}</option>`).join('')
+    + `<option value="__manage__">✎ Edit profiles…</option>`;
+  sel.value = PROFILE;
+}
+function switchProfile(name) {
+  if (name === '__manage__') { document.getElementById('profile-select').value = PROFILE; openProfilesModal(); return; }
+  const url = new URL(location.href);
+  if (name === 'main') url.searchParams.delete('profile'); else url.searchParams.set('profile', name);
+  location.href = url.toString();
+}
+function openProfilesModal() { renderProfilesList(); openModal('profiles-modal'); }
+function renderProfilesList() {
+  document.getElementById('profiles-list').innerHTML = getProfiles().map(p => `
+    <div class="profile-row">
+      <span>${esc(p.name)}<code>${esc(p.id)}</code></span>
+      <button type="button" class="icon-btn danger" onclick="deleteProfile('${esc(p.id)}')" title="Delete profile">🗑</button>
+    </div>`).join('');
+}
+function addProfile() {
+  const input = document.getElementById('new-profile-name');
+  const name = input.value.trim();
+  if (!name) return;
+  const list = getProfiles();
+  const base = slugifyProfile(name);
+  let id = base, n = 2;
+  while (list.some(p => p.id === id)) id = base + '_' + (n++);
+  list.push({ id, name });
+  saveProfiles(list);
+  input.value = '';
+  renderProfilesList(); renderProfileSelect();
+  toast('Profile added — switch to it from the dropdown, then Push once it has records');
+}
+function deleteProfile(id) {
+  const list = getProfiles();
+  if (list.length <= 1) { toast('Keep at least one profile'); return; }
+  if (!confirm('Delete this profile? Its local data on this device is removed — anything already pushed to GitHub is untouched.')) return;
+  saveProfiles(list.filter(p => p.id !== id));
+  localStorage.removeItem('vshelf_v1_' + id);
+  localStorage.removeItem('vshelf_github_config_' + id);
+  renderProfilesList(); renderProfileSelect();
+  if (id === PROFILE) switchProfile(getProfiles()[0].id);
+}
+
+// ─────────────────────────────────────────
+// HELPERS
+// ─────────────────────────────────────────
+function esc(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+}
+function genId() { return 'v' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+function todayISO() { return new Date().toISOString().slice(0, 10); }
+function initials(title) {
+  return (title || '?').trim().split(/\s+/).slice(0, 2).map(w => w[0]).join('').toUpperCase();
+}
+let _tt;
+function toast(msg, ms = 2400) {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.classList.add('show');
+  clearTimeout(_tt); _tt = setTimeout(() => el.classList.remove('show'), ms);
+}
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') document.querySelectorAll('.modal.open').forEach(m => closeModal(m.id));
+});
+
+// ─────────────────────────────────────────
+// STATE + PERSISTENCE
+// ─────────────────────────────────────────
+let db = { records: [] };
+function save() { localStorage.setItem(STORAGE_KEY, JSON.stringify(db)); }
+
+async function boot() {
+  if (new URLSearchParams(location.search).has('_hr')) {
+    const clean = new URL(location.href);
+    clean.searchParams.delete('_hr');
+    history.replaceState(null, '', clean.pathname + clean.search + clean.hash);
+  }
+  const saved = localStorage.getItem(STORAGE_KEY);
+  if (saved) {
+    try { db = JSON.parse(saved); if (!Array.isArray(db.records)) db.records = []; }
+    catch { db = { records: [] }; }
+    checkRepoSync();
+  } else {
+    try {
+      const r = await fetch(SEED_FILE);
+      if (r.ok) {
+        const d = await r.json();
+        if (Array.isArray(d.records)) { db = d; save(); }
+      }
+    } catch {}
+  }
+  renderProfileSelect();
+  renderShelf();
+}
+
+function dbFingerprint(d) {
+  return JSON.stringify((d.records || [])
+    .map(r => [r.id, r.title, r.artist, r.appleMusicUrl, r.artworkUrl, r.tags, r.type].join('|'))
+    .sort());
+}
+async function checkRepoSync() {
+  try {
+    const r = await fetch(SEED_FILE + '?_=' + Date.now());
+    if (!r.ok) return;
+    const repoData = await r.json();
+    if (!Array.isArray(repoData.records)) return;
+    if (dbFingerprint(db) === dbFingerprint(repoData)) return;
+    const localIds = new Set(db.records.map(x => x.id));
+    const repoIds  = new Set(repoData.records.map(x => x.id));
+    const onlyRepo  = repoData.records.filter(x => !localIds.has(x.id)).length;
+    const onlyLocal = db.records.filter(x => !repoIds.has(x.id)).length;
+    const parts = [];
+    if (onlyRepo)  parts.push(`${onlyRepo} only in repo`);
+    if (onlyLocal) parts.push(`${onlyLocal} only local`);
+    if (!parts.length) parts.push('records edited');
+    document.getElementById('sync-msg').textContent = `Repo differs — ${parts.join(', ')}.`;
+    const banner = document.getElementById('sync-banner');
+    banner._repoData = repoData;
+    banner.classList.remove('hidden');
+  } catch {}
+}
+function acceptSync() {
+  const banner = document.getElementById('sync-banner');
+  db = banner._repoData; save(); renderShelf();
+  banner.classList.add('hidden');
+  toast('Loaded from repo');
+}
+function dismissSync() { document.getElementById('sync-banner').classList.add('hidden'); }
+
+async function forceRefresh() {
+  if (!confirm('Force refresh from the published ' + SEED_FILE + '? Any local changes not yet pushed will be lost, and the page will reload.')) return;
+  const btn = document.getElementById('btn-force-refresh');
+  btn.disabled = true; btn.textContent = '🔄…';
+  try {
+    const r = await fetch(SEED_FILE + '?_=' + Date.now());
+    if (!r.ok) throw new Error(`GET ${r.status}`);
+    const d = await r.json();
+    if (!Array.isArray(d.records)) throw new Error('Invalid data');
+    db = d; save();
+    hardReloadPage();
+  } catch (err) {
+    toast('Refresh failed: ' + err.message, 4000);
+    btn.disabled = false; btn.textContent = '🔄 Refresh from repo';
+  }
+}
+function hardReloadPage() {
+  const url = new URL(location.href);
+  url.searchParams.set('_hr', Date.now());
+  location.replace(url.toString());
+}
+
+// ─────────────────────────────────────────
+// MORE MENU
+// ─────────────────────────────────────────
+function toggleMoreMenu() { document.getElementById('more-menu').classList.toggle('open'); }
+document.addEventListener('click', e => {
+  const menu = document.getElementById('more-menu'), btn = document.getElementById('more-btn');
+  if (menu.classList.contains('open') && !menu.contains(e.target) && e.target !== btn) menu.classList.remove('open');
+});
+
+// ─────────────────────────────────────────
+// SHELF RENDERING / FILTERS
+// ─────────────────────────────────────────
+let searchQuery = '', sortMode = 'added_desc', tagFilter = '';
+function setSearch(v) { searchQuery = v; renderShelf(); }
+function setSortMode(v) { sortMode = v; renderShelf(); }
+function setTagFilter(v) { tagFilter = v; renderShelf(); }
+
+function filteredSortedRecords() {
+  let list = db.records.slice();
+  if (searchQuery.trim()) {
+    const q = searchQuery.trim().toLowerCase();
+    list = list.filter(r => (r.title||'').toLowerCase().includes(q) || (r.artist||'').toLowerCase().includes(q) || (r.tags||'').toLowerCase().includes(q));
+  }
+  if (tagFilter) {
+    const tf = tagFilter.toLowerCase();
+    list = list.filter(r => (r.tags||'').split(',').map(t => t.trim().toLowerCase()).includes(tf));
+  }
+  const cmp = {
+    added_desc: (a,b) => (b.addedAt||'').localeCompare(a.addedAt||''),
+    added_asc:  (a,b) => (a.addedAt||'').localeCompare(b.addedAt||''),
+    title_asc:  (a,b) => (a.title||'').localeCompare(b.title||''),
+    artist_asc: (a,b) => (a.artist||'').localeCompare(b.artist||'') || (a.title||'').localeCompare(b.title||''),
+  }[sortMode] || (() => 0);
+  return list.sort(cmp);
+}
+
+function recordCardHTML(r) {
+  const hasArt = !!r.artworkUrl;
+  const badge = r.type === 'song' ? '45' : 'LP';
+  return `
+    <div class="record" data-id="${esc(r.id)}">
+      <div class="vinyl-peek" aria-hidden="true"></div>
+      <div class="cover ${hasArt ? '' : 'art-fail'}" onclick="openRecord('${esc(r.id)}')" tabindex="0">
+        ${hasArt ? `<img src="${esc(r.artworkUrl)}" alt="" loading="lazy" onerror="this.parentElement.classList.add('art-fail')">` : ''}
+        <div class="cover-fallback">${esc(initials(r.title))}</div>
+        <span class="fmt-badge">${badge}</span>
+        <div class="cover-actions">
+          <button type="button" class="icon-btn" onclick="event.stopPropagation(); openEditModal('${esc(r.id)}')" title="Edit">✎</button>
+          <button type="button" class="icon-btn danger" onclick="event.stopPropagation(); deleteRecord('${esc(r.id)}')" title="Remove">🗑</button>
+        </div>
+        <div class="cover-caption">
+          <strong>${esc(r.title)}</strong>
+          <span>${esc(r.artist || '')}</span>
+        </div>
+      </div>
+    </div>`;
+}
+
+function renderShelf() {
+  const grid = document.getElementById('shelf-grid');
+  const list = filteredSortedRecords();
+  document.getElementById('shelf-count').textContent =
+    `${db.records.length} record${db.records.length === 1 ? '' : 's'}` +
+    (list.length !== db.records.length ? ` · ${list.length} shown` : '');
+
+  document.getElementById('empty-state').classList.toggle('hidden', db.records.length !== 0);
+  document.getElementById('no-results-state').classList.toggle('hidden', !(db.records.length && !list.length));
+  grid.innerHTML = (db.records.length && list.length) ? list.map(recordCardHTML).join('') : '';
+
+  renderTagFilterOptions();
+  renderTagDatalist();
+}
+function renderTagFilterOptions() {
+  const sel = document.getElementById('tag-filter'), cur = sel.value;
+  const tags = new Set();
+  db.records.forEach(r => (r.tags||'').split(',').forEach(t => { t = t.trim(); if (t) tags.add(t); }));
+  const sorted = [...tags].sort((a,b) => a.localeCompare(b));
+  sel.innerHTML = '<option value="">All tags</option>' + sorted.map(t => `<option value="${esc(t)}">${esc(t)}</option>`).join('');
+  if (sorted.includes(cur)) sel.value = cur;
+}
+function renderTagDatalist() {
+  const tags = new Set();
+  db.records.forEach(r => (r.tags||'').split(',').forEach(t => { t = t.trim(); if (t) tags.add(t); }));
+  document.getElementById('tag-list').innerHTML = [...tags].sort((a,b)=>a.localeCompare(b)).map(t => `<option value="${esc(t)}">`).join('');
+}
+function openRecord(id) {
+  const r = db.records.find(x => x.id === id);
+  if (r && r.appleMusicUrl) window.open(r.appleMusicUrl, '_blank', 'noopener');
+  else toast('No Apple Music link saved for this record');
+}
+
+// ─────────────────────────────────────────
+// ADD / EDIT RECORD MODAL
+// ─────────────────────────────────────────
+let editingId = null;
+let amSearchEntity = 'album';
+let amSearchResults = [];
+let discogsResults = [];
+
+function setAddTab(tab) {
+  document.getElementById('tab-link').classList.toggle('hidden', tab !== 'link');
+  document.getElementById('tab-search').classList.toggle('hidden', tab !== 'search');
+  document.getElementById('tab-btn-link').classList.toggle('active', tab === 'link');
+  document.getElementById('tab-btn-search').classList.toggle('active', tab === 'search');
+}
+function resetRecordForm() {
+  ['rf-title','rf-artist','rf-link','rf-artwork','rf-tags'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('rf-type').value = 'album';
+  document.getElementById('am-link-input').value = '';
+  document.getElementById('am-link-status').textContent = '';
+  document.getElementById('am-search-q').value = '';
+  document.getElementById('am-search-results').innerHTML = '';
+  updateArtworkPreview();
+  setAddTab('link');
+}
+function openAddModal() {
+  editingId = null;
+  resetRecordForm();
+  document.getElementById('record-modal-title').textContent = 'Add Record';
+  document.getElementById('rf-delete-btn').style.display = 'none';
+  openModal('record-modal');
+  document.getElementById('am-link-input').focus();
+}
+function openEditModal(id) {
+  const r = db.records.find(x => x.id === id);
+  if (!r) return;
+  editingId = id;
+  resetRecordForm();
+  document.getElementById('rf-title').value = r.title || '';
+  document.getElementById('rf-artist').value = r.artist || '';
+  document.getElementById('rf-link').value = r.appleMusicUrl || '';
+  document.getElementById('rf-artwork').value = r.artworkUrl || '';
+  document.getElementById('rf-tags').value = r.tags || '';
+  document.getElementById('rf-type').value = r.type || 'album';
+  updateArtworkPreview();
+  document.getElementById('record-modal-title').textContent = 'Edit Record';
+  document.getElementById('rf-delete-btn').style.display = '';
+  openModal('record-modal');
+}
+function updateArtworkPreview() {
+  const url = document.getElementById('rf-artwork').value.trim();
+  const box = document.getElementById('art-preview');
+  box.innerHTML = url ? `<img src="${esc(url)}" onerror="this.parentElement.innerHTML='💿'">` : '💿';
+}
+function saveRecordForm() {
+  const title = document.getElementById('rf-title').value.trim();
+  const artist = document.getElementById('rf-artist').value.trim();
+  const link = document.getElementById('rf-link').value.trim();
+  const artwork = document.getElementById('rf-artwork').value.trim();
+  const tags = document.getElementById('rf-tags').value.trim();
+  const type = document.getElementById('rf-type').value || 'album';
+  if (!title || !link) { toast('Title and Apple Music link are required'); return; }
+  if (editingId) {
+    const r = db.records.find(x => x.id === editingId);
+    if (r) Object.assign(r, { title, artist, appleMusicUrl: link, artworkUrl: artwork, tags, type });
+  } else {
+    db.records.unshift({ id: genId(), title, artist, appleMusicUrl: link, artworkUrl: artwork, tags, type, addedAt: todayISO() });
+  }
+  save(); renderShelf(); closeModal('record-modal');
+  toast(editingId ? 'Record updated' : 'Added to shelf');
+}
+function deleteRecord(id, fromModal) {
+  const r = db.records.find(x => x.id === id);
+  if (!r) return;
+  if (!confirm(`Remove "${r.title}" from the shelf?`)) return;
+  db.records = db.records.filter(x => x.id !== id);
+  save(); renderShelf();
+  if (fromModal) closeModal('record-modal');
+  toast('Removed from shelf');
+}
+
+// ─────────────────────────────────────────
+// APPLE MUSIC — link parsing / lookup / search
+// (iTunes Search/Lookup API: public, no key, CORS-enabled — used both to resolve a
+// pasted link and to search the catalog directly)
+// ─────────────────────────────────────────
+function parseAppleMusicUrl(raw) {
+  try {
+    const url = new URL(/^https?:\/\//i.test(raw) ? raw : 'https://' + raw);
+    if (!/(^|\.)music\.apple\.com$/.test(url.hostname)) return null;
+    const track = url.searchParams.get('i');
+    if (track) return { id: track };
+    const parts = url.pathname.split('/').filter(Boolean);
+    const last = parts[parts.length - 1];
+    if (/^\d+$/.test(last)) return { id: last };
+  } catch {}
+  return null;
+}
+function upsizeArtwork(url, size = 1200) {
+  if (!url) return '';
+  return url.replace(/\/\d+x\d+bb\.(jpg|png)$/, `/${size}x${size}bb.$1`);
+}
+async function fetchAppleMusicMeta(rawUrl) {
+  const parsed = parseAppleMusicUrl(rawUrl);
+  if (!parsed) return null;
+  const res = await fetch(`https://itunes.apple.com/lookup?id=${encodeURIComponent(parsed.id)}`);
+  if (!res.ok) throw new Error(`iTunes lookup ${res.status}`);
+  const data = await res.json();
+  const item = data.results && data.results[0];
+  if (!item) return null;
+  return {
+    title: item.collectionName || item.trackName || '',
+    artist: item.artistName || '',
+    artwork: upsizeArtwork(item.artworkUrl100 || item.artworkUrl60 || ''),
+    link: item.collectionViewUrl || item.trackViewUrl || rawUrl,
+    type: item.wrapperType === 'track' ? 'song' : 'album',
+  };
+}
+async function fetchFromLink() {
+  const raw = document.getElementById('am-link-input').value.trim();
+  const status = document.getElementById('am-link-status');
+  if (!raw) { toast('Paste an Apple Music link first'); return; }
+  status.textContent = 'Fetching…';
+  try {
+    const meta = await fetchAppleMusicMeta(raw);
+    if (!meta) {
+      status.textContent = "Couldn't recognize that as an Apple Music link — fill in the details manually below.";
+      document.getElementById('rf-link').value = raw;
+      return;
+    }
+    document.getElementById('rf-title').value = meta.title;
+    document.getElementById('rf-artist').value = meta.artist;
+    document.getElementById('rf-link').value = meta.link;
+    document.getElementById('rf-artwork').value = meta.artwork;
+    document.getElementById('rf-type').value = meta.type;
+    updateArtworkPreview();
+    status.textContent = `✓ Found "${meta.title}" — ${meta.artist || 'unknown artist'}`;
+  } catch (err) {
+    status.textContent = 'Lookup failed (' + err.message + ') — fill in manually below.';
+    document.getElementById('rf-link').value = raw;
+  }
+}
+async function doAppleSearch() {
+  const q = document.getElementById('am-search-q').value.trim();
+  const list = document.getElementById('am-search-results');
+  if (!q) { list.innerHTML = ''; return; }
+  list.innerHTML = '<div class="am-loading">Searching…</div>';
+  try {
+    const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(q)}&entity=${amSearchEntity}&limit=24`);
+    if (!res.ok) throw new Error(`iTunes search ${res.status}`);
+    const data = await res.json();
+    amSearchResults = data.results || [];
+    renderAmSearchResults();
+  } catch (err) {
+    list.innerHTML = `<div class="am-empty">Search failed: ${esc(err.message)}</div>`;
+  }
+}
+function renderAmSearchResults() {
+  const list = document.getElementById('am-search-results');
+  if (!amSearchResults.length) { list.innerHTML = '<div class="am-empty">No results</div>'; return; }
+  list.innerHTML = amSearchResults.map((item, i) => {
+    const title = item.collectionName || item.trackName || '';
+    const art = upsizeArtwork(item.artworkUrl100 || '', 300);
+    return `<button type="button" class="pick-item" onclick="pickAmResult(${i})">
+      <img src="${esc(art)}" loading="lazy" alt="">
+      <strong>${esc(title)}</strong>
+      <small>${esc(item.artistName || '')}</small>
+    </button>`;
+  }).join('');
+}
+function pickAmResult(i) {
+  const item = amSearchResults[i];
+  if (!item) return;
+  document.getElementById('rf-title').value = item.collectionName || item.trackName || '';
+  document.getElementById('rf-artist').value = item.artistName || '';
+  document.getElementById('rf-link').value = item.collectionViewUrl || item.trackViewUrl || '';
+  document.getElementById('rf-artwork').value = upsizeArtwork(item.artworkUrl100 || '');
+  document.getElementById('rf-type').value = item.wrapperType === 'track' ? 'song' : 'album';
+  updateArtworkPreview();
+  toast(`Selected "${item.collectionName || item.trackName}" — review details below and Save`);
+}
+
+// ─────────────────────────────────────────
+// DISCOGS — optional cover-art lookup (public search API; a personal token
+// just raises the unauthenticated rate limit, it isn't required)
+// ─────────────────────────────────────────
+function getDiscogsToken() { return localStorage.getItem(DISCOGS_TOKEN_KEY) || ''; }
+function openDiscogsSettingsModal() {
+  document.getElementById('discogs-token-input').value = getDiscogsToken();
+  openModal('discogs-settings-modal');
+}
+function saveDiscogsToken() {
+  localStorage.setItem(DISCOGS_TOKEN_KEY, document.getElementById('discogs-token-input').value.trim());
+  closeModal('discogs-settings-modal');
+  toast('Discogs token saved');
+}
+async function searchDiscogsCovers() {
+  const artist = document.getElementById('rf-artist').value.trim();
+  const title = document.getElementById('rf-title').value.trim();
+  if (!artist && !title) { toast('Enter a title or artist first'); return; }
+  const panel = document.getElementById('discogs-results');
+  panel.innerHTML = '<div class="am-loading">Searching Discogs…</div>';
+  openModal('discogs-modal');
+  try {
+    const token = getDiscogsToken();
+    let url = `https://api.discogs.com/database/search?q=${encodeURIComponent((artist + ' ' + title).trim())}&type=release&format=Vinyl&per_page=12`;
+    if (token) url += `&token=${encodeURIComponent(token)}`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(res.status === 429 ? 'Rate limited — wait a bit, or add a token via ⋯ → Discogs token' : `Discogs ${res.status}`);
+    const data = await res.json();
+    discogsResults = (data.results || []).filter(r => r.cover_image || r.thumb);
+    renderDiscogsResults();
+  } catch (err) {
+    panel.innerHTML = `<div class="am-empty">${esc(err.message)}</div>`;
+  }
+}
+function renderDiscogsResults() {
+  const panel = document.getElementById('discogs-results');
+  if (!discogsResults.length) { panel.innerHTML = '<div class="am-empty">No vinyl covers found — try different wording, or paste an artwork URL manually.</div>'; return; }
+  panel.innerHTML = discogsResults.map((r, i) => `
+    <button type="button" class="dg-item" onclick="pickDiscogsCover(${i})">
+      <img src="${esc(r.cover_image || r.thumb)}" loading="lazy" alt="">
+      <span>${esc(r.title || '')}${r.year ? ' · ' + esc(String(r.year)) : ''}</span>
+    </button>`).join('');
+}
+function pickDiscogsCover(i) {
+  const r = discogsResults[i];
+  if (!r) return;
+  document.getElementById('rf-artwork').value = r.cover_image || r.thumb;
+  updateArtworkPreview();
+  closeModal('discogs-modal');
+  toast('Cover updated from Discogs');
+}
+
+// ─────────────────────────────────────────
+// EXPORT / IMPORT
+// ─────────────────────────────────────────
+function exportData() {
+  const blob = new Blob([JSON.stringify(db, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = SEED_FILE;
+  a.click();
+  URL.revokeObjectURL(a.href);
+  toggleMoreMenu();
+}
+function triggerImport() { toggleMoreMenu(); document.getElementById('import-file').click(); }
+function handleImportFile(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const d = JSON.parse(reader.result);
+      if (!Array.isArray(d.records)) throw new Error('Missing "records" array');
+      db = d; save(); renderShelf();
+      toast('Imported ' + d.records.length + ' record' + (d.records.length === 1 ? '' : 's'));
+    } catch (err) { toast('Import failed: ' + err.message, 4000); }
+    e.target.value = '';
+  };
+  reader.readAsText(file);
+}
+
+// ─────────────────────────────────────────
+// GITHUB PUSH / PULL
+// ─────────────────────────────────────────
+function getGithubConfig() {
+  try { return JSON.parse(localStorage.getItem(GH_CFG_KEY) || 'null'); } catch { return null; }
+}
+function clearGithubConfig() {
+  localStorage.removeItem(GH_CFG_KEY);
+  const auto = autoDetectGithub();
+  document.getElementById('gh-token').value  = '';
+  document.getElementById('gh-owner').value  = auto.owner;
+  document.getElementById('gh-repo').value   = auto.repo;
+  document.getElementById('gh-branch').value = 'main';
+  document.getElementById('gh-path').value   = SEED_FILE;
+  toast('GitHub settings cleared');
+}
+function autoDetectGithub() {
+  const host = location.hostname, path = location.pathname;
+  const m = host.match(/^([^.]+)\.github\.io$/);
+  if (m) {
+    const rm = path.match(/^\/([^/]+)/);
+    return { owner: m[1], repo: rm ? rm[1] : '', branch: 'main', path: SEED_FILE, token: '' };
+  }
+  return { owner: '', repo: '', branch: 'main', path: SEED_FILE, token: '' };
+}
+let ghConfigIntent = 'push';
+function openGithubConfigModal(intent) {
+  toggleMoreMenu();
+  ghConfigIntent = intent || 'push';
+  const cfg = getGithubConfig() || autoDetectGithub();
+  document.getElementById('gh-token').value  = cfg.token  || '';
+  document.getElementById('gh-owner').value  = cfg.owner  || '';
+  document.getElementById('gh-repo').value   = cfg.repo   || '';
+  document.getElementById('gh-branch').value = cfg.branch || 'main';
+  document.getElementById('gh-path').value   = cfg.path   || SEED_FILE;
+  document.getElementById('github-modal-title').textContent = ghConfigIntent === 'pull' ? 'Pull from GitHub' : 'Push to GitHub';
+  document.getElementById('gh-save-btn').textContent = ghConfigIntent === 'pull' ? 'Save & Pull' : 'Save & Push';
+  openModal('github-modal');
+  document.getElementById('gh-token').focus();
+}
+function saveGithubConfig() {
+  const cfg = {
+    token:  document.getElementById('gh-token').value.trim(),
+    owner:  document.getElementById('gh-owner').value.trim(),
+    repo:   document.getElementById('gh-repo').value.trim(),
+    branch: document.getElementById('gh-branch').value.trim() || 'main',
+    path:   document.getElementById('gh-path').value.trim()   || SEED_FILE,
+  };
+  if (!cfg.token || !cfg.owner || !cfg.repo) { toast('Token, Owner and Repo are required'); return; }
+  localStorage.setItem(GH_CFG_KEY, JSON.stringify(cfg));
+  closeModal('github-modal');
+  if (ghConfigIntent === 'pull') doPull(cfg); else doPush(cfg);
+}
+async function pushToGithub() { openGithubConfigModal('push'); }
+async function doPush(cfg) {
+  const btn = document.getElementById('btn-push');
+  btn.disabled = true; btn.textContent = '↑…';
+  try {
+    const json = JSON.stringify(db, null, 2);
+    const bytes = new TextEncoder().encode(json);
+    let binary = ''; bytes.forEach(b => binary += String.fromCharCode(b));
+    const content = btoa(binary);
+    const apiUrl = `https://api.github.com/repos/${cfg.owner}/${cfg.repo}/contents/${cfg.path}`;
+    const headers = { 'Authorization': `token ${cfg.token}`, 'Content-Type': 'application/json', 'Accept': 'application/vnd.github.v3+json' };
+    let sha;
+    const getRes = await fetch(`${apiUrl}?ref=${encodeURIComponent(cfg.branch)}`, { headers });
+    if (getRes.ok) sha = (await getRes.json()).sha;
+    else if (getRes.status !== 404) { const err = await getRes.json().catch(()=>({})); throw new Error(err.message || `GET ${getRes.status}`); }
+    const body = { message: `Update ${cfg.path} via vShelf app`, content, branch: cfg.branch };
+    if (sha) body.sha = sha;
+    const putRes = await fetch(apiUrl, { method: 'PUT', headers, body: JSON.stringify(body) });
+    if (!putRes.ok) { const err = await putRes.json().catch(()=>({})); throw new Error(err.message || `PUT ${putRes.status}`); }
+    toast('Pushed to GitHub!');
+    document.getElementById('sync-banner').classList.add('hidden');
+  } catch (err) {
+    toast('Push failed: ' + err.message, 4000);
+  } finally {
+    btn.disabled = false; btn.textContent = '⬆ Push';
+  }
+}
+async function pullFromGithub() {
+  const cfg = getGithubConfig();
+  if (!cfg) { openGithubConfigModal('pull'); return; }
+  doPull(cfg);
+}
+async function doPull(cfg) {
+  const btn = document.getElementById('btn-pull');
+  btn.disabled = true; btn.textContent = '⬇…';
+  try {
+    const apiUrl = `https://api.github.com/repos/${cfg.owner}/${cfg.repo}/contents/${cfg.path}`;
+    const headers = { 'Authorization': `token ${cfg.token}`, 'Accept': 'application/vnd.github.v3+json' };
+    const res = await fetch(`${apiUrl}?ref=${encodeURIComponent(cfg.branch)}&_=${Date.now()}`, { headers });
+    if (!res.ok) { const err = await res.json().catch(()=>({})); throw new Error(err.message || `GET ${res.status}`); }
+    const file = await res.json();
+    const json = decodeURIComponent(escape(atob(file.content.replace(/\n/g, ''))));
+    const d = JSON.parse(json);
+    if (!Array.isArray(d.records)) throw new Error('Invalid data — missing "records" array');
+    db = d; save(); renderShelf();
+    toast('Pulled from GitHub!');
+    document.getElementById('sync-banner').classList.add('hidden');
+  } catch (err) {
+    toast('Pull failed: ' + err.message, 4000);
+  } finally {
+    btn.disabled = false; btn.textContent = '⬇ Pull';
+  }
+}
+
+boot();
+</script>
+</body>
+</html>
