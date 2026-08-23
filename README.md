@@ -2,19 +2,18 @@
 
 A virtual vinyl shelf for your Apple Music collection — a single-page web app, no backend or build step required.
 
-You don't own physical records; you "acquire" a record by pasting its Apple Music link (or finding it via search) and it takes its place on your shelf. Click a cover to open it in Apple Music.
+You don't own physical records; you "acquire" a record by pasting its Apple Music link and it takes its place on your shelf. Click a cover to open it in Apple Music.
 
 ## Features
 
 - **Shelf view** — records displayed as album covers on a wood-shelf grid, each with a little vinyl disc peeking out behind it. Click a cover to open it in Apple Music.
-- **Add a record**
-  - **Paste a link** — drop in a `music.apple.com` album or song URL and it auto-fills title, artist and cover art via Apple's public catalog lookup
-  - **Search Apple Music** — search the catalog by name and pick a result directly, no link needed
-  - **Discogs cover lookup** — optionally pull an alternate (often higher-quality vinyl scan) cover from Discogs instead of Apple's own artwork
+- **Add a record** — paste a `music.apple.com` album or song link and it auto-fills title, artist and cover art via Apple's public catalog lookup
+- **Discogs cover lookup** — optionally pull an alternate (often higher-quality vinyl scan) cover from Discogs instead of Apple's own artwork
+- **Rating** — rate any record 0–5 stars in half-star steps; sort the shelf by rating
 - Edit or remove any record; tag records freely (genre, mood, whatever) and filter/search/sort the shelf by them
 - **Data** stored in `localStorage`, seeded from `vshelf_<profile>.json` on first load
 - **⬆ Push / ⬇ Pull** — sync the shelf directly with this GitHub repo via the GitHub Contents API (needs a personal access token, configured in-app)
-- **🔄 Refresh** — reload the app and its data from what's published, bypassing the browser cache
+- **🔄 Refresh** — hard-reload the app and its data from what's published, bypassing the browser cache
 - **Export / Import** — download or load a `.json` backup
 - **Profiles** — keep multiple separate shelves (e.g. different people, different genres) via the header dropdown; each is its own `vshelf_<id>.json`
 
@@ -39,6 +38,7 @@ Works fully offline after the first load.
       "artworkUrl": "https://...",
       "type": "album",
       "tags": "jazz, 1970s",
+      "rating": 3.5,
       "addedAt": "2026-08-23"
     }
   ]

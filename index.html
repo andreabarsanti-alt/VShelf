@@ -230,11 +230,6 @@ main{padding-bottom:60px;}
 .modal-footer{display:flex; justify-content:flex-end; gap:8px; margin-top:18px; padding-top:16px; border-top:1px solid var(--border-soft);}
 .modal-footer .spacer{flex:1;}
 
-/* Tabs inside add-record modal */
-.tabs{display:flex; gap:6px; margin-bottom:16px; background:var(--bg2); padding:4px; border-radius:9px;}
-.tabs button{flex:1; background:none; border:none; color:var(--muted); padding:8px; border-radius:6px; font-size:13px; font-weight:600; cursor:pointer;}
-.tabs button.active{background:var(--accent); color:var(--accent-ink);}
-.tab-panel.hidden{display:none;}
 .inline-row{display:flex; gap:8px;}
 .inline-row input{flex:1;}
 #am-link-status{font-size:12.5px; color:var(--muted); margin-top:7px; min-height:16px;}
@@ -250,28 +245,30 @@ main{padding-bottom:60px;}
 
 .divider-label{font-size:11px; text-transform:uppercase; letter-spacing:.6px; color:var(--muted-dim); margin:18px 0 10px; font-weight:600;}
 
-#am-search-results, #discogs-results{
+#discogs-results{
   display:grid; grid-template-columns:repeat(auto-fill,minmax(96px,1fr)); gap:9px;
   max-height:260px; overflow-y:auto; padding-right:2px; margin-top:10px;
 }
-.pick-item, .dg-item{
+.dg-item{
   background:var(--bg2); border:1px solid var(--border); border-radius:8px; padding:6px;
   cursor:pointer; text-align:left; display:flex; flex-direction:column; gap:5px; color:var(--ink);
 }
-.pick-item:hover, .dg-item:hover{border-color:var(--accent);}
-.pick-item img, .dg-item img{width:100%; aspect-ratio:1/1; object-fit:cover; border-radius:5px; background:#111;}
-.pick-item strong, .dg-item span{font-size:11px; line-height:1.3; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
-.pick-item small{font-size:10px; color:var(--muted);}
+.dg-item:hover{border-color:var(--accent);}
+.dg-item img{width:100%; aspect-ratio:1/1; object-fit:cover; border-radius:5px; background:#111;}
+.dg-item span{font-size:11px; line-height:1.3; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
 .am-loading, .am-empty{color:var(--muted); font-size:13px; padding:16px 4px; text-align:center;}
-#am-search-context{margin-top:10px;}
-#am-search-results.list-mode{display:flex; flex-direction:column; gap:6px;}
-.artist-item{
-  background:var(--bg2); border:1px solid var(--border); border-radius:8px; padding:9px 12px;
-  cursor:pointer; text-align:left; display:flex; justify-content:space-between; align-items:baseline; gap:10px; color:var(--ink);
+
+/* Star rating — a colored ★★★★★ layer clipped to a % width sits on top of a dim ★★★★★
+   background layer, so half-star fills are a true partial-character clip, not a glyph. */
+.star-rating{position:relative; display:inline-block; letter-spacing:2px; color:rgba(255,255,255,.16); line-height:1;}
+.star-rating::before{
+  content:'★★★★★'; position:absolute; inset:0; width:var(--pct,0%); overflow:hidden; white-space:nowrap; color:#e8b64a;
 }
-.artist-item:hover{border-color:var(--accent);}
-.artist-item strong{font-size:13px;}
-.artist-item small{font-size:11px; color:var(--muted); white-space:nowrap;}
+.star-rating.sm{font-size:11px; letter-spacing:1px;}
+.rating-picker{display:flex; align-items:center; gap:12px; flex-wrap:wrap;}
+.rating-picker .star-rating{font-size:23px; letter-spacing:4px;}
+.rating-picker input[type=range]{flex:1; min-width:120px; accent-color:#e8b64a;}
+#rf-rating-label{font-size:12.5px; color:var(--muted); min-width:52px;}
 
 .profile-row, #profiles-list .profile-row{
   display:flex; justify-content:space-between; align-items:center;
@@ -315,10 +312,10 @@ main{padding-bottom:60px;}
     <button type="button" class="btn primary" onclick="openAddModal()">＋ Add Record</button>
     <button type="button" class="btn" id="btn-push" onclick="pushToGithub()">⬆ Push</button>
     <button type="button" class="btn" id="btn-pull" onclick="pullFromGithub()">⬇ Pull</button>
+    <button type="button" class="btn" id="btn-force-refresh" onclick="forceRefresh()" title="Hard-reload the app and its data from what's published, bypassing the cache">🔄 Refresh</button>
     <div class="more-wrap">
       <button type="button" class="btn ghost" id="more-btn" onclick="toggleMoreMenu()">⋯</button>
       <div id="more-menu">
-        <button type="button" id="btn-force-refresh" onclick="forceRefresh()">🔄 Refresh from repo</button>
         <button type="button" onclick="exportData()">⬇ Export JSON</button>
         <button type="button" onclick="triggerImport()">⬆ Import JSON</button>
         <hr>
@@ -345,6 +342,7 @@ main{padding-bottom:60px;}
     <option value="added_asc">Oldest added</option>
     <option value="title_asc">Title A–Z</option>
     <option value="artist_asc">Artist A–Z</option>
+    <option value="rating_desc">Highest rated</option>
   </select>
 </div>
 
@@ -369,30 +367,14 @@ main{padding-bottom:60px;}
   <div class="modal-box wide">
     <h3><span id="record-modal-title">Add Record</span><button type="button" class="modal-close" onclick="closeModal('record-modal')">✕</button></h3>
 
-    <div class="tabs">
-      <button type="button" id="tab-btn-link" class="active" onclick="setAddTab('link')">🔗 Paste Link</button>
-      <button type="button" id="tab-btn-search" onclick="setAddTab('search')">🔎 Search Apple Music</button>
-    </div>
-
-    <div class="tab-panel" id="tab-link">
+    <div class="field">
+      <label>Apple Music Link</label>
       <div class="inline-row">
         <input type="url" id="am-link-input" placeholder="https://music.apple.com/us/album/…">
         <button type="button" class="btn" onclick="fetchFromLink()">Fetch</button>
       </div>
       <div id="am-link-status"></div>
-    </div>
-
-    <div class="tab-panel hidden" id="tab-search">
-      <div class="inline-row">
-        <input type="text" id="am-search-q" placeholder="Album or artist…" onkeydown="if(event.key==='Enter'){event.preventDefault();doAppleSearch();}">
-        <select id="am-search-entity" onchange="amSearchEntity=this.value; document.getElementById('am-search-results').innerHTML=''; clearAmContext();">
-          <option value="album">Albums</option>
-          <option value="artist">Artists</option>
-        </select>
-        <button type="button" class="btn" onclick="doAppleSearch()">Search</button>
-      </div>
-      <div id="am-search-context"></div>
-      <div id="am-search-results"></div>
+      <p class="hint">Paste a link from the Apple Music app or site — title, artist and cover fill in automatically.</p>
     </div>
 
     <div class="divider-label">Record details</div>
@@ -422,6 +404,14 @@ main{padding-bottom:60px;}
       <label>Tags</label>
       <input type="text" id="rf-tags" list="tag-list" placeholder="jazz, 1970s, favorite…">
       <datalist id="tag-list"></datalist>
+    </div>
+    <div class="field">
+      <label>Rating</label>
+      <div class="rating-picker">
+        <span class="star-rating" id="rf-rating-stars" style="--pct:0%">★★★★★</span>
+        <input type="range" id="rf-rating" min="0" max="10" step="1" value="0" oninput="updateRatingPicker(this.value)">
+        <span id="rf-rating-label">Unrated</span>
+      </div>
     </div>
 
     <div class="modal-footer">
@@ -631,7 +621,7 @@ async function boot() {
 
 function dbFingerprint(d) {
   return JSON.stringify((d.records || [])
-    .map(r => [r.id, r.title, r.artist, r.appleMusicUrl, r.artworkUrl, r.tags, r.type].join('|'))
+    .map(r => [r.id, r.title, r.artist, r.appleMusicUrl, r.artworkUrl, r.tags, r.type, r.rating].join('|'))
     .sort());
 }
 async function checkRepoSync() {
@@ -676,7 +666,7 @@ async function forceRefresh() {
     hardReloadPage();
   } catch (err) {
     toast('Refresh failed: ' + err.message, 4000);
-    btn.disabled = false; btn.textContent = '🔄 Refresh from repo';
+    btn.disabled = false; btn.textContent = '🔄 Refresh';
   }
 }
 function hardReloadPage() {
@@ -713,10 +703,11 @@ function filteredSortedRecords() {
     list = list.filter(r => (r.tags||'').split(',').map(t => t.trim().toLowerCase()).includes(tf));
   }
   const cmp = {
-    added_desc: (a,b) => (b.addedAt||'').localeCompare(a.addedAt||''),
-    added_asc:  (a,b) => (a.addedAt||'').localeCompare(b.addedAt||''),
-    title_asc:  (a,b) => (a.title||'').localeCompare(b.title||''),
-    artist_asc: (a,b) => (a.artist||'').localeCompare(b.artist||'') || (a.title||'').localeCompare(b.title||''),
+    added_desc:  (a,b) => (b.addedAt||'').localeCompare(a.addedAt||''),
+    added_asc:   (a,b) => (a.addedAt||'').localeCompare(b.addedAt||''),
+    title_asc:   (a,b) => (a.title||'').localeCompare(b.title||''),
+    artist_asc:  (a,b) => (a.artist||'').localeCompare(b.artist||'') || (a.title||'').localeCompare(b.title||''),
+    rating_desc: (a,b) => (b.rating||0) - (a.rating||0) || (a.title||'').localeCompare(b.title||''),
   }[sortMode] || (() => 0);
   return list.sort(cmp);
 }
@@ -736,6 +727,7 @@ function recordCardHTML(r) {
         <div class="cover-caption">
           <strong>${esc(r.title)}</strong>
           <span>${esc(r.artist || '')}</span>
+          ${r.rating ? `<span class="star-rating sm" style="--pct:${r.rating / 5 * 100}%" title="${r.rating} / 5">★★★★★</span>` : ''}
         </div>
       </div>
     </div>`;
@@ -778,27 +770,22 @@ function openRecord(id) {
 // ADD / EDIT RECORD MODAL
 // ─────────────────────────────────────────
 let editingId = null;
-let amSearchEntity = 'album';
-let amSearchResults = [];
-let amArtistResults = [];
 let discogsResults = [];
 
-function setAddTab(tab) {
-  document.getElementById('tab-link').classList.toggle('hidden', tab !== 'link');
-  document.getElementById('tab-search').classList.toggle('hidden', tab !== 'search');
-  document.getElementById('tab-btn-link').classList.toggle('active', tab === 'link');
-  document.getElementById('tab-btn-search').classList.toggle('active', tab === 'search');
+// Half-star rating: the range input carries half-star units (0-10); rating = value/2.
+function updateRatingPicker(v) {
+  const rating = (+v) / 2;
+  document.getElementById('rf-rating-stars').style.setProperty('--pct', (rating / 5 * 100) + '%');
+  document.getElementById('rf-rating-label').textContent = rating > 0 ? (rating % 1 ? rating.toFixed(1) : rating) + ' / 5' : 'Unrated';
 }
 function resetRecordForm() {
   ['rf-title','rf-artist','rf-link','rf-artwork','rf-tags'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('rf-type').value = 'album';
   document.getElementById('am-link-input').value = '';
   document.getElementById('am-link-status').textContent = '';
-  document.getElementById('am-search-q').value = '';
-  document.getElementById('am-search-results').innerHTML = '';
-  clearAmContext();
+  document.getElementById('rf-rating').value = 0;
+  updateRatingPicker(0);
   updateArtworkPreview();
-  setAddTab('link');
 }
 function openAddModal() {
   editingId = null;
@@ -819,6 +806,8 @@ function openEditModal(id) {
   document.getElementById('rf-artwork').value = r.artworkUrl || '';
   document.getElementById('rf-tags').value = r.tags || '';
   document.getElementById('rf-type').value = r.type || 'album';
+  document.getElementById('rf-rating').value = (r.rating || 0) * 2;
+  updateRatingPicker((r.rating || 0) * 2);
   updateArtworkPreview();
   document.getElementById('record-modal-title').textContent = 'Edit Record';
   document.getElementById('rf-delete-btn').style.display = '';
@@ -836,12 +825,13 @@ function saveRecordForm() {
   const artwork = document.getElementById('rf-artwork').value.trim();
   const tags = document.getElementById('rf-tags').value.trim();
   const type = document.getElementById('rf-type').value || 'album';
+  const rating = (+document.getElementById('rf-rating').value) / 2;
   if (!title || !link) { toast('Title and Apple Music link are required'); return; }
   if (editingId) {
     const r = db.records.find(x => x.id === editingId);
-    if (r) Object.assign(r, { title, artist, appleMusicUrl: link, artworkUrl: artwork, tags, type });
+    if (r) Object.assign(r, { title, artist, appleMusicUrl: link, artworkUrl: artwork, tags, type, rating });
   } else {
-    db.records.unshift({ id: genId(), title, artist, appleMusicUrl: link, artworkUrl: artwork, tags, type, addedAt: todayISO() });
+    db.records.unshift({ id: genId(), title, artist, appleMusicUrl: link, artworkUrl: artwork, tags, type, rating, addedAt: todayISO() });
   }
   save(); renderShelf(); closeModal('record-modal');
   toast(editingId ? 'Record updated' : 'Added to shelf');
@@ -917,99 +907,6 @@ async function fetchFromLink() {
     document.getElementById('rf-link').value = raw;
   }
 }
-// Album mode is a plain catalog term search. Artist mode searches artist names instead —
-// picking one then lists that artist's real catalog via a lookup (pickArtist), since a
-// free-text title search alone can be surprisingly unreliable for well-known albums (Apple's
-// relevance ranking can bury the actual record under a pile of unrelated same-titled singles).
-function clearAmContext() { document.getElementById('am-search-context').innerHTML = ''; }
-
-async function doAppleSearch() {
-  const q = document.getElementById('am-search-q').value.trim();
-  const list = document.getElementById('am-search-results');
-  clearAmContext();
-  if (!q) { list.innerHTML = ''; return; }
-  if (amSearchEntity === 'artist') return doArtistSearch(q);
-  list.innerHTML = '<div class="am-loading">Searching…</div>';
-  try {
-    const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(q)}&media=music&entity=album&limit=24`);
-    if (!res.ok) throw new Error(`iTunes search ${res.status}`);
-    const data = await res.json();
-    amSearchResults = data.results || [];
-    renderAmSearchResults();
-  } catch (err) {
-    list.innerHTML = `<div class="am-empty">Search failed: ${esc(err.message)}</div>`;
-  }
-}
-function renderAmSearchResults() {
-  const list = document.getElementById('am-search-results');
-  list.classList.remove('list-mode');
-  if (!amSearchResults.length) { list.innerHTML = '<div class="am-empty">No results</div>'; return; }
-  list.innerHTML = amSearchResults.map((item, i) => {
-    const title = item.collectionName || item.trackName || '';
-    const art = upsizeArtwork(item.artworkUrl100 || '', 300);
-    return `<button type="button" class="pick-item" onclick="pickAmResult(${i})">
-      <img src="${esc(art)}" loading="lazy" alt="">
-      <strong>${esc(title)}</strong>
-      <small>${esc(item.artistName || '')}</small>
-    </button>`;
-  }).join('');
-}
-function pickAmResult(i) {
-  const item = amSearchResults[i];
-  if (!item) return;
-  document.getElementById('rf-title').value = item.collectionName || item.trackName || '';
-  document.getElementById('rf-artist').value = item.artistName || '';
-  document.getElementById('rf-link').value = item.collectionViewUrl || item.trackViewUrl || '';
-  document.getElementById('rf-artwork').value = upsizeArtwork(item.artworkUrl100 || '');
-  document.getElementById('rf-type').value = item.wrapperType === 'track' ? 'song' : 'album';
-  updateArtworkPreview();
-  toast(`Selected "${item.collectionName || item.trackName}" — review details below and Save`);
-}
-
-async function doArtistSearch(q) {
-  const list = document.getElementById('am-search-results');
-  list.innerHTML = '<div class="am-loading">Searching…</div>';
-  try {
-    const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(q)}&entity=musicArtist&limit=12`);
-    if (!res.ok) throw new Error(`iTunes search ${res.status}`);
-    const data = await res.json();
-    amArtistResults = data.results || [];
-    renderArtistResults();
-  } catch (err) {
-    list.innerHTML = `<div class="am-empty">Search failed: ${esc(err.message)}</div>`;
-  }
-}
-function renderArtistResults() {
-  clearAmContext();
-  const list = document.getElementById('am-search-results');
-  list.classList.add('list-mode');
-  if (!amArtistResults.length) { list.innerHTML = '<div class="am-empty">No artists found</div>'; return; }
-  list.innerHTML = amArtistResults.map((a, i) => `
-    <button type="button" class="artist-item" onclick="pickArtist(${i})">
-      <strong>${esc(a.artistName)}</strong>
-      <small>${esc(a.primaryGenreName || '')}</small>
-    </button>`).join('');
-}
-async function pickArtist(i) {
-  const artist = amArtistResults[i];
-  if (!artist) return;
-  const list = document.getElementById('am-search-results');
-  list.classList.remove('list-mode');
-  list.innerHTML = '<div class="am-loading">Loading catalog…</div>';
-  try {
-    const res = await fetch(`https://itunes.apple.com/lookup?id=${encodeURIComponent(artist.artistId)}&entity=album&limit=200`);
-    if (!res.ok) throw new Error(`iTunes lookup ${res.status}`);
-    const data = await res.json();
-    amSearchResults = (data.results || []).filter(r => r.wrapperType === 'collection');
-    document.getElementById('am-search-context').innerHTML =
-      `<button type="button" class="btn ghost" style="font-size:12px;padding:5px 10px;margin-bottom:8px;" onclick="renderArtistResults()">← Back to artists</button>
-       <div class="hint" style="margin:-2px 0 8px;">Albums by ${esc(artist.artistName)}</div>`;
-    renderAmSearchResults();
-  } catch (err) {
-    list.innerHTML = `<div class="am-empty">Catalog lookup failed: ${esc(err.message)}</div>`;
-  }
-}
-
 // ─────────────────────────────────────────
 // DISCOGS — optional cover-art lookup (public search API; a personal token
 // just raises the unauthenticated rate limit, it isn't required)
