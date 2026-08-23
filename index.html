@@ -177,11 +177,13 @@ main{padding-bottom:60px;}
 }
 .cover.art-fail .cover-fallback{display:flex;}
 .cover-actions{
-  position:absolute; top:7px; right:7px; z-index:2; display:flex; gap:5px;
+  position:absolute; top:7px; right:7px; z-index:2; display:none; gap:5px;
   opacity:0; transition:opacity .15s;
 }
-.record:hover .cover-actions, .record:focus-within .cover-actions{opacity:1;}
-@media (hover:none){ .cover-actions{opacity:.92;} }
+body.edit-mode .cover-actions{display:flex;}
+body.edit-mode .record:hover .cover-actions, body.edit-mode .record:focus-within .cover-actions,
+body.edit-mode .spine:hover .cover-actions, body.edit-mode .spine:focus-within .cover-actions{opacity:1;}
+@media (hover:none){ body.edit-mode .cover-actions{opacity:.92;} }
 .cover-caption{
   position:absolute; left:0; right:0; bottom:0; z-index:2;
   padding:20px 9px 8px;
@@ -190,6 +192,59 @@ main{padding-bottom:60px;}
 }
 .cover-caption strong{font-size:12.5px; line-height:1.25; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
 .cover-caption span{font-size:11px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+
+/* ── Crate view ── an alternative to the flat grid: records as thin spines packed
+   side by side like flipping through a record-store crate, each spine tinted by a hash
+   of its id so the row reads as varied sleeves. Hover/focus lifts the spine and pops
+   the full cover (same .cover markup as the grid) above it. ───────────────────── */
+.crate-grid{
+  display:flex; align-items:flex-end; gap:2px; overflow-x:auto; overflow-y:hidden;
+  /* min-height reserves room for the popped-up cover *inside* the box, rather than
+     relying on overflow-y:visible — which the CSS spec coerces to auto (and thus
+     clipping) the moment overflow-x is anything but visible too. */
+  min-height:420px;
+  padding:20px 26px 46px;
+  background-image:linear-gradient(180deg, transparent 0%, transparent calc(100% - 34px),
+    var(--wood-dark) calc(100% - 34px), var(--wood) calc(100% - 31px), var(--wood) 100%);
+}
+.crate-grid.hidden{display:none;}
+.shelf-grid.hidden{display:none;}
+.spine{
+  position:relative; flex:none; width:30px; height:190px; border-radius:3px 3px 1px 1px;
+  cursor:pointer; transition:transform .18s ease, box-shadow .18s ease; outline:none;
+  box-shadow:1px 0 0 rgba(0,0,0,.35), -1px 0 0 rgba(255,255,255,.04);
+  display:flex; align-items:flex-end; justify-content:center; padding-bottom:9px;
+}
+.spine:hover, .spine:focus-within{
+  transform:translateY(-16px) rotate(-1.2deg); z-index:5;
+  box-shadow:0 18px 26px -12px rgba(0,0,0,.65), 1px 0 0 rgba(0,0,0,.35);
+}
+.spine-label{
+  writing-mode:vertical-rl; transform:rotate(180deg); white-space:nowrap;
+  font-size:10.5px; font-weight:600; letter-spacing:.2px; color:rgba(255,255,255,.85);
+  max-height:168px; overflow:hidden; text-overflow:ellipsis;
+  text-shadow:0 1px 2px rgba(0,0,0,.55); pointer-events:none;
+}
+.spine-pop{
+  position:absolute; left:50%; bottom:100%; margin-bottom:6px;
+  transform:translate(-50%,8px) scale(.94); transform-origin:bottom center;
+  width:168px; opacity:0; visibility:hidden; pointer-events:none;
+  transition:opacity .15s ease, transform .15s ease, visibility .15s;
+}
+.spine:hover .spine-pop, .spine:focus-within .spine-pop{
+  opacity:1; visibility:visible; pointer-events:auto; transform:translate(-50%,0) scale(1);
+}
+.spine-pop .cover{box-shadow:0 20px 34px -12px rgba(0,0,0,.7);}
+
+.view-toggle{display:flex; gap:2px; background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:2px;}
+.view-toggle button{
+  background:none; border:none; color:var(--muted); width:28px; height:26px; border-radius:6px;
+  cursor:pointer; font-size:13.5px; display:flex; align-items:center; justify-content:center;
+}
+.view-toggle button.active{background:var(--accent); color:var(--accent-ink);}
+
+.edit-toggle{display:flex; align-items:center; gap:6px; font-size:13px; color:var(--muted); cursor:pointer; user-select:none; white-space:nowrap;}
+.edit-toggle input{accent-color:var(--accent); cursor:pointer; width:14px; height:14px;}
 
 .state-msg{
   display:flex; flex-direction:column; align-items:center; gap:12px; text-align:center;
@@ -245,18 +300,6 @@ main{padding-bottom:60px;}
 
 .divider-label{font-size:11px; text-transform:uppercase; letter-spacing:.6px; color:var(--muted-dim); margin:18px 0 10px; font-weight:600;}
 
-#discogs-results{
-  display:grid; grid-template-columns:repeat(auto-fill,minmax(96px,1fr)); gap:9px;
-  max-height:260px; overflow-y:auto; padding-right:2px; margin-top:10px;
-}
-.dg-item{
-  background:var(--bg2); border:1px solid var(--border); border-radius:8px; padding:6px;
-  cursor:pointer; text-align:left; display:flex; flex-direction:column; gap:5px; color:var(--ink);
-}
-.dg-item:hover{border-color:var(--accent);}
-.dg-item img{width:100%; aspect-ratio:1/1; object-fit:cover; border-radius:5px; background:#111;}
-.dg-item span{font-size:11px; line-height:1.3; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
-.am-loading, .am-empty{color:var(--muted); font-size:13px; padding:16px 4px; text-align:center;}
 
 /* Star rating — a colored ★★★★★ layer clipped to a % width sits on top of a dim ★★★★★
    background layer, so half-star fills are a true partial-character clip, not a glyph. */
@@ -309,6 +352,14 @@ main{padding-bottom:60px;}
     <input type="search" id="search-input" placeholder="Search title, artist, tag…" oninput="setSearch(this.value)">
   </div>
   <div class="hdr-actions">
+    <div class="view-toggle" role="group" aria-label="Shelf view">
+      <button type="button" class="view-btn" id="view-btn-shelf" onclick="setViewMode('shelf')" title="Shelf view">🗄</button>
+      <button type="button" class="view-btn" id="view-btn-crate" onclick="setViewMode('crate')" title="Crate view — flip through spines">📦</button>
+    </div>
+    <label class="edit-toggle" title="Show edit/remove icons on records">
+      <input type="checkbox" id="edit-mode-toggle" onchange="setEditMode(this.checked)">
+      <span>Edit mode</span>
+    </label>
     <button type="button" class="btn primary" onclick="openAddModal()">＋ Add Record</button>
     <button type="button" class="btn" id="btn-push" onclick="pushToGithub()">⬆ Push</button>
     <button type="button" class="btn" id="btn-pull" onclick="pullFromGithub()">⬇ Pull</button>
@@ -319,7 +370,6 @@ main{padding-bottom:60px;}
         <button type="button" onclick="exportData()">⬇ Export JSON</button>
         <button type="button" onclick="triggerImport()">⬆ Import JSON</button>
         <hr>
-        <button type="button" onclick="openDiscogsSettingsModal()">💿 Discogs token…</button>
         <button type="button" onclick="openGithubConfigModal('push')">⚙ GitHub settings…</button>
         <hr>
         <button type="button" onclick="openProfilesModal()">✎ Edit profiles…</button>
@@ -336,22 +386,45 @@ main{padding-bottom:60px;}
 
 <div class="toolbar">
   <span id="shelf-count">0 records</span>
+  <select id="format-filter" onchange="setFormatFilter(this.value)">
+    <option value="">All formats</option>
+    <option value="album">Album</option>
+    <option value="single">Single</option>
+    <option value="compilation">Compilation</option>
+  </select>
+  <select id="artist-filter" onchange="setArtistFilter(this.value)"><option value="">All artists</option></select>
+  <select id="year-filter" onchange="setYearFilter(this.value)"><option value="">All years</option></select>
   <select id="tag-filter" onchange="setTagFilter(this.value)"><option value="">All tags</option></select>
+  <select id="rating-filter" onchange="setRatingFilter(this.value)">
+    <option value="">All ratings</option>
+    <option value="5">★★★★★ only</option>
+    <option value="4">★★★★+</option>
+    <option value="3">★★★+</option>
+    <option value="2">★★+</option>
+    <option value="1">★+</option>
+    <option value="0">Unrated</option>
+  </select>
   <select id="sort-select" onchange="setSortMode(this.value)">
     <option value="added_desc">Recently added</option>
     <option value="added_asc">Oldest added</option>
     <option value="title_asc">Title A–Z</option>
     <option value="artist_asc">Artist A–Z</option>
+    <option value="year_desc">Year: newest</option>
+    <option value="year_asc">Year: oldest</option>
+    <option value="type_asc">Format A–Z</option>
+    <option value="tags_asc">Tags A–Z</option>
     <option value="rating_desc">Highest rated</option>
+    <option value="rating_asc">Lowest rated</option>
   </select>
 </div>
 
 <main>
   <div id="shelf-grid" class="shelf-grid"></div>
+  <div id="crate-grid" class="crate-grid hidden"></div>
   <div id="empty-state" class="state-msg hidden">
     <div class="big">💿</div>
     <h2>Your shelf is empty</h2>
-    <p>Paste an Apple Music link or search the catalog to add your first record.</p>
+    <p>Paste an Apple Music link to add your first record.</p>
     <button type="button" class="btn primary" onclick="openAddModal()">＋ Add Record</button>
   </div>
   <div id="no-results-state" class="state-msg hidden">
@@ -386,7 +459,6 @@ main{padding-bottom:60px;}
           <label>Artwork URL</label>
           <input type="text" id="rf-artwork" placeholder="Filled automatically, or paste your own" oninput="updateArtworkPreview()">
         </div>
-        <button type="button" class="btn ghost" style="font-size:12px;padding:6px 10px;" onclick="searchDiscogsCovers()">💿 Try Discogs cover</button>
       </div>
     </div>
 
@@ -397,8 +469,9 @@ main{padding-bottom:60px;}
     <div class="field-row">
       <div class="field" style="flex:2"><label>Apple Music Link *</label><input type="url" id="rf-link" placeholder="https://music.apple.com/…"></div>
       <div class="field" style="flex:1"><label>Format</label>
-        <select id="rf-type"><option value="album">Album</option><option value="song">Song</option></select>
+        <select id="rf-type"><option value="album">Album</option><option value="single">Single</option><option value="compilation">Compilation</option></select>
       </div>
+      <div class="field" style="flex:1"><label>Year</label><input type="number" id="rf-year" placeholder="2015" min="1900" max="2099" step="1"></div>
     </div>
     <div class="field">
       <label>Tags</label>
@@ -419,33 +492,6 @@ main{padding-bottom:60px;}
       <span class="spacer"></span>
       <button type="button" class="btn ghost" onclick="closeModal('record-modal')">Cancel</button>
       <button type="button" class="btn primary" onclick="saveRecordForm()">Save to shelf</button>
-    </div>
-  </div>
-</div>
-
-<!-- Discogs cover picker -->
-<div class="modal" id="discogs-modal">
-  <div class="backdrop" onclick="closeModal('discogs-modal')"></div>
-  <div class="modal-box wide">
-    <h3>Discogs covers<button type="button" class="modal-close" onclick="closeModal('discogs-modal')">✕</button></h3>
-    <p class="hint" style="margin-bottom:4px;">Vinyl release scans from Discogs — pick one to use as this record's cover.</p>
-    <div id="discogs-results"></div>
-  </div>
-</div>
-
-<!-- Discogs settings -->
-<div class="modal" id="discogs-settings-modal">
-  <div class="backdrop" onclick="closeModal('discogs-settings-modal')"></div>
-  <div class="modal-box">
-    <h3>Discogs<button type="button" class="modal-close" onclick="closeModal('discogs-settings-modal')">✕</button></h3>
-    <div class="field">
-      <label>Personal access token (optional)</label>
-      <input type="text" id="discogs-token-input" placeholder="Raises the search rate limit">
-      <p class="hint">Cover search works without one, just rate-limited. Get a token from your Discogs account → Settings → Developers.</p>
-    </div>
-    <div class="modal-footer">
-      <button type="button" class="btn ghost" onclick="closeModal('discogs-settings-modal')">Cancel</button>
-      <button type="button" class="btn primary" onclick="saveDiscogsToken()">Save</button>
     </div>
   </div>
 </div>
@@ -503,7 +549,8 @@ const PROFILE     = new URLSearchParams(location.search).get('profile') || 'main
 const STORAGE_KEY = 'vshelf_v1_' + PROFILE;
 const SEED_FILE   = 'vshelf_' + PROFILE + '.json';
 const GH_CFG_KEY  = 'vshelf_github_config_' + PROFILE;
-const DISCOGS_TOKEN_KEY = 'vshelf_discogs_token'; // global — one Discogs account, not per-shelf
+const EDIT_MODE_KEY = 'vshelf_edit_mode'; // global — a UI preference, not shelf data
+const VIEW_MODE_KEY = 'vshelf_view_mode'; // global — ditto
 
 const PROFILES_KEY = 'vshelf_profiles';
 const DEFAULT_PROFILES = [{ id: 'main', name: 'Main Shelf' }];
@@ -601,6 +648,11 @@ async function boot() {
     clean.searchParams.delete('_hr');
     history.replaceState(null, '', clean.pathname + clean.search + clean.hash);
   }
+  const editOn = localStorage.getItem(EDIT_MODE_KEY) === '1';
+  document.getElementById('edit-mode-toggle').checked = editOn;
+  document.body.classList.toggle('edit-mode', editOn);
+  viewMode = localStorage.getItem(VIEW_MODE_KEY) === 'crate' ? 'crate' : 'shelf';
+  updateViewToggleUI();
   const saved = localStorage.getItem(STORAGE_KEY);
   if (saved) {
     try { db = JSON.parse(saved); if (!Array.isArray(db.records)) db.records = []; }
@@ -621,7 +673,7 @@ async function boot() {
 
 function dbFingerprint(d) {
   return JSON.stringify((d.records || [])
-    .map(r => [r.id, r.title, r.artist, r.appleMusicUrl, r.artworkUrl, r.tags, r.type, r.rating].join('|'))
+    .map(r => [r.id, r.title, r.artist, r.appleMusicUrl, r.artworkUrl, r.tags, r.type, r.rating, r.year].join('|'))
     .sort());
 }
 async function checkRepoSync() {
@@ -685,12 +737,36 @@ document.addEventListener('click', e => {
 });
 
 // ─────────────────────────────────────────
+// EDIT MODE / VIEW MODE — UI preferences, not shelf data, so they're stored
+// unnamespaced (same toggle regardless of which profile is open).
+// ─────────────────────────────────────────
+function setEditMode(on) {
+  document.body.classList.toggle('edit-mode', on);
+  localStorage.setItem(EDIT_MODE_KEY, on ? '1' : '0');
+}
+let viewMode = 'shelf';
+function setViewMode(v) {
+  viewMode = v === 'crate' ? 'crate' : 'shelf';
+  localStorage.setItem(VIEW_MODE_KEY, viewMode);
+  updateViewToggleUI();
+  renderShelf();
+}
+function updateViewToggleUI() {
+  document.getElementById('view-btn-shelf').classList.toggle('active', viewMode === 'shelf');
+  document.getElementById('view-btn-crate').classList.toggle('active', viewMode === 'crate');
+}
+
+// ─────────────────────────────────────────
 // SHELF RENDERING / FILTERS
 // ─────────────────────────────────────────
-let searchQuery = '', sortMode = 'added_desc', tagFilter = '';
+let searchQuery = '', sortMode = 'added_desc', tagFilter = '', formatFilter = '', artistFilter = '', yearFilter = '', ratingFilter = '';
 function setSearch(v) { searchQuery = v; renderShelf(); }
 function setSortMode(v) { sortMode = v; renderShelf(); }
 function setTagFilter(v) { tagFilter = v; renderShelf(); }
+function setFormatFilter(v) { formatFilter = v; renderShelf(); }
+function setArtistFilter(v) { artistFilter = v; renderShelf(); }
+function setYearFilter(v) { yearFilter = v; renderShelf(); }
+function setRatingFilter(v) { ratingFilter = v; renderShelf(); }
 
 function filteredSortedRecords() {
   let list = db.records.slice();
@@ -702,21 +778,33 @@ function filteredSortedRecords() {
     const tf = tagFilter.toLowerCase();
     list = list.filter(r => (r.tags||'').split(',').map(t => t.trim().toLowerCase()).includes(tf));
   }
+  if (formatFilter) list = list.filter(r => (r.type || 'album') === formatFilter);
+  if (artistFilter) list = list.filter(r => (r.artist || '') === artistFilter);
+  if (yearFilter) list = list.filter(r => String(r.year || '') === yearFilter);
+  if (ratingFilter !== '') {
+    const rf = +ratingFilter;
+    list = list.filter(r => rf === 0 ? !r.rating : (r.rating || 0) >= rf);
+  }
   const cmp = {
     added_desc:  (a,b) => (b.addedAt||'').localeCompare(a.addedAt||''),
     added_asc:   (a,b) => (a.addedAt||'').localeCompare(b.addedAt||''),
     title_asc:   (a,b) => (a.title||'').localeCompare(b.title||''),
     artist_asc:  (a,b) => (a.artist||'').localeCompare(b.artist||'') || (a.title||'').localeCompare(b.title||''),
+    year_desc:   (a,b) => (b.year||0) - (a.year||0) || (a.title||'').localeCompare(b.title||''),
+    year_asc:    (a,b) => (a.year||0) - (b.year||0) || (a.title||'').localeCompare(b.title||''),
+    type_asc:    (a,b) => (a.type||'album').localeCompare(b.type||'album') || (a.title||'').localeCompare(b.title||''),
+    tags_asc:    (a,b) => (a.tags||'').localeCompare(b.tags||'') || (a.title||'').localeCompare(b.title||''),
     rating_desc: (a,b) => (b.rating||0) - (a.rating||0) || (a.title||'').localeCompare(b.title||''),
+    rating_asc:  (a,b) => (a.rating||0) - (b.rating||0) || (a.title||'').localeCompare(b.title||''),
   }[sortMode] || (() => 0);
   return list.sort(cmp);
 }
 
-function recordCardHTML(r) {
+// The inner ".cover" markup is shared between the plain grid card and the crate
+// spine's hover pop-up, so edit/remove/open behavior stays identical in both views.
+function coverInnerHTML(r) {
   const hasArt = !!r.artworkUrl;
   return `
-    <div class="record" data-id="${esc(r.id)}">
-      <div class="vinyl-peek" aria-hidden="true"></div>
       <div class="cover ${hasArt ? '' : 'art-fail'}" onclick="openRecord('${esc(r.id)}')" tabindex="0">
         ${hasArt ? `<img src="${esc(r.artworkUrl)}" alt="" loading="lazy" onerror="this.parentElement.classList.add('art-fail')">` : ''}
         <div class="cover-fallback">${esc(initials(r.title))}</div>
@@ -726,15 +814,36 @@ function recordCardHTML(r) {
         </div>
         <div class="cover-caption">
           <strong>${esc(r.title)}</strong>
-          <span>${esc(r.artist || '')}</span>
+          <span>${esc(r.artist || '')}${r.year ? ' · ' + esc(String(r.year)) : ''}</span>
           ${r.rating ? `<span class="star-rating sm" style="--pct:${r.rating / 5 * 100}%" title="${r.rating} / 5">★★★★★</span>` : ''}
         </div>
-      </div>
+      </div>`;
+}
+function recordCardHTML(r) {
+  return `
+    <div class="record" data-id="${esc(r.id)}">
+      <div class="vinyl-peek" aria-hidden="true"></div>
+      ${coverInnerHTML(r)}
+    </div>`;
+}
+// Deterministic hue from a string so each crate spine gets a stable, varied tint
+// (no real per-cover color extraction — a cheap stand-in that still reads as "sleeves").
+function hashHue(str) {
+  let h = 0;
+  for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) % 360;
+  return h;
+}
+function spineHTML(r) {
+  const hue = hashHue(r.id || r.title || '');
+  const bg = `linear-gradient(180deg, hsl(${hue},30%,23%), hsl(${hue},36%,12%))`;
+  return `
+    <div class="spine" data-id="${esc(r.id)}" style="background:${bg}" tabindex="0">
+      <div class="spine-label">${esc(r.title)}${r.artist ? ' · ' + esc(r.artist) : ''}</div>
+      <div class="spine-pop">${coverInnerHTML(r)}</div>
     </div>`;
 }
 
 function renderShelf() {
-  const grid = document.getElementById('shelf-grid');
   const list = filteredSortedRecords();
   document.getElementById('shelf-count').textContent =
     `${db.records.length} record${db.records.length === 1 ? '' : 's'}` +
@@ -742,10 +851,35 @@ function renderShelf() {
 
   document.getElementById('empty-state').classList.toggle('hidden', db.records.length !== 0);
   document.getElementById('no-results-state').classList.toggle('hidden', !(db.records.length && !list.length));
-  grid.innerHTML = (db.records.length && list.length) ? list.map(recordCardHTML).join('') : '';
 
+  const showGrid = viewMode === 'shelf';
+  const gridEl = document.getElementById('shelf-grid'), crateEl = document.getElementById('crate-grid');
+  gridEl.classList.toggle('hidden', !showGrid);
+  crateEl.classList.toggle('hidden', showGrid);
+  const hasResults = db.records.length && list.length;
+  gridEl.innerHTML  = (hasResults && showGrid)  ? list.map(recordCardHTML).join('') : '';
+  crateEl.innerHTML = (hasResults && !showGrid) ? list.map(spineHTML).join('')      : '';
+
+  renderArtistFilterOptions();
+  renderYearFilterOptions();
   renderTagFilterOptions();
   renderTagDatalist();
+}
+function renderArtistFilterOptions() {
+  const sel = document.getElementById('artist-filter'), cur = sel.value;
+  const artists = new Set();
+  db.records.forEach(r => { if (r.artist && r.artist.trim()) artists.add(r.artist.trim()); });
+  const sorted = [...artists].sort((a,b) => a.localeCompare(b));
+  sel.innerHTML = '<option value="">All artists</option>' + sorted.map(a => `<option value="${esc(a)}">${esc(a)}</option>`).join('');
+  if (sorted.includes(cur)) sel.value = cur;
+}
+function renderYearFilterOptions() {
+  const sel = document.getElementById('year-filter'), cur = sel.value;
+  const years = new Set();
+  db.records.forEach(r => { if (r.year) years.add(String(r.year)); });
+  const sorted = [...years].sort((a,b) => b.localeCompare(a));
+  sel.innerHTML = '<option value="">All years</option>' + sorted.map(y => `<option value="${esc(y)}">${esc(y)}</option>`).join('');
+  if (sorted.includes(cur)) sel.value = cur;
 }
 function renderTagFilterOptions() {
   const sel = document.getElementById('tag-filter'), cur = sel.value;
@@ -770,7 +904,6 @@ function openRecord(id) {
 // ADD / EDIT RECORD MODAL
 // ─────────────────────────────────────────
 let editingId = null;
-let discogsResults = [];
 
 // Half-star rating: the range input carries half-star units (0-10); rating = value/2.
 function updateRatingPicker(v) {
@@ -779,7 +912,7 @@ function updateRatingPicker(v) {
   document.getElementById('rf-rating-label').textContent = rating > 0 ? (rating % 1 ? rating.toFixed(1) : rating) + ' / 5' : 'Unrated';
 }
 function resetRecordForm() {
-  ['rf-title','rf-artist','rf-link','rf-artwork','rf-tags'].forEach(id => document.getElementById(id).value = '');
+  ['rf-title','rf-artist','rf-link','rf-artwork','rf-tags','rf-year'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('rf-type').value = 'album';
   document.getElementById('am-link-input').value = '';
   document.getElementById('am-link-status').textContent = '';
@@ -806,6 +939,7 @@ function openEditModal(id) {
   document.getElementById('rf-artwork').value = r.artworkUrl || '';
   document.getElementById('rf-tags').value = r.tags || '';
   document.getElementById('rf-type').value = r.type || 'album';
+  document.getElementById('rf-year').value = r.year || '';
   document.getElementById('rf-rating').value = (r.rating || 0) * 2;
   updateRatingPicker((r.rating || 0) * 2);
   updateArtworkPreview();
@@ -825,13 +959,15 @@ function saveRecordForm() {
   const artwork = document.getElementById('rf-artwork').value.trim();
   const tags = document.getElementById('rf-tags').value.trim();
   const type = document.getElementById('rf-type').value || 'album';
+  const yearRaw = document.getElementById('rf-year').value.trim();
+  const year = yearRaw ? +yearRaw : null;
   const rating = (+document.getElementById('rf-rating').value) / 2;
   if (!title || !link) { toast('Title and Apple Music link are required'); return; }
   if (editingId) {
     const r = db.records.find(x => x.id === editingId);
-    if (r) Object.assign(r, { title, artist, appleMusicUrl: link, artworkUrl: artwork, tags, type, rating });
+    if (r) Object.assign(r, { title, artist, appleMusicUrl: link, artworkUrl: artwork, tags, type, year, rating });
   } else {
-    db.records.unshift({ id: genId(), title, artist, appleMusicUrl: link, artworkUrl: artwork, tags, type, rating, addedAt: todayISO() });
+    db.records.unshift({ id: genId(), title, artist, appleMusicUrl: link, artworkUrl: artwork, tags, type, year, rating, addedAt: todayISO() });
   }
   save(); renderShelf(); closeModal('record-modal');
   toast(editingId ? 'Record updated' : 'Added to shelf');
@@ -875,12 +1011,16 @@ async function fetchAppleMusicMeta(rawUrl) {
   const data = await res.json();
   const item = data.results && data.results[0];
   if (!item) return null;
+  // No direct "single" field from iTunes: a track-level link (?i=…) is treated as a
+  // single, a collection explicitly marked "Compilation" as a compilation, else album.
+  const type = item.wrapperType === 'track' ? 'single' : (item.collectionType === 'Compilation' ? 'compilation' : 'album');
   return {
     title: item.collectionName || item.trackName || '',
     artist: item.artistName || '',
     artwork: upsizeArtwork(item.artworkUrl100 || item.artworkUrl60 || ''),
     link: item.collectionViewUrl || item.trackViewUrl || rawUrl,
-    type: item.wrapperType === 'track' ? 'song' : 'album',
+    type,
+    year: item.releaseDate ? item.releaseDate.slice(0, 4) : '',
   };
 }
 async function fetchFromLink() {
@@ -900,6 +1040,7 @@ async function fetchFromLink() {
     document.getElementById('rf-link').value = meta.link;
     document.getElementById('rf-artwork').value = meta.artwork;
     document.getElementById('rf-type').value = meta.type;
+    document.getElementById('rf-year').value = meta.year || '';
     updateArtworkPreview();
     status.textContent = `✓ Found "${meta.title}" — ${meta.artist || 'unknown artist'}`;
   } catch (err) {
@@ -907,58 +1048,6 @@ async function fetchFromLink() {
     document.getElementById('rf-link').value = raw;
   }
 }
-// ─────────────────────────────────────────
-// DISCOGS — optional cover-art lookup (public search API; a personal token
-// just raises the unauthenticated rate limit, it isn't required)
-// ─────────────────────────────────────────
-function getDiscogsToken() { return localStorage.getItem(DISCOGS_TOKEN_KEY) || ''; }
-function openDiscogsSettingsModal() {
-  document.getElementById('discogs-token-input').value = getDiscogsToken();
-  openModal('discogs-settings-modal');
-}
-function saveDiscogsToken() {
-  localStorage.setItem(DISCOGS_TOKEN_KEY, document.getElementById('discogs-token-input').value.trim());
-  closeModal('discogs-settings-modal');
-  toast('Discogs token saved');
-}
-async function searchDiscogsCovers() {
-  const artist = document.getElementById('rf-artist').value.trim();
-  const title = document.getElementById('rf-title').value.trim();
-  if (!artist && !title) { toast('Enter a title or artist first'); return; }
-  const panel = document.getElementById('discogs-results');
-  panel.innerHTML = '<div class="am-loading">Searching Discogs…</div>';
-  openModal('discogs-modal');
-  try {
-    const token = getDiscogsToken();
-    let url = `https://api.discogs.com/database/search?q=${encodeURIComponent((artist + ' ' + title).trim())}&type=release&format=Vinyl&per_page=12`;
-    if (token) url += `&token=${encodeURIComponent(token)}`;
-    const res = await fetch(url);
-    if (!res.ok) throw new Error(res.status === 429 ? 'Rate limited — wait a bit, or add a token via ⋯ → Discogs token' : `Discogs ${res.status}`);
-    const data = await res.json();
-    discogsResults = (data.results || []).filter(r => r.cover_image || r.thumb);
-    renderDiscogsResults();
-  } catch (err) {
-    panel.innerHTML = `<div class="am-empty">${esc(err.message)}</div>`;
-  }
-}
-function renderDiscogsResults() {
-  const panel = document.getElementById('discogs-results');
-  if (!discogsResults.length) { panel.innerHTML = '<div class="am-empty">No vinyl covers found — try different wording, or paste an artwork URL manually.</div>'; return; }
-  panel.innerHTML = discogsResults.map((r, i) => `
-    <button type="button" class="dg-item" onclick="pickDiscogsCover(${i})">
-      <img src="${esc(r.cover_image || r.thumb)}" loading="lazy" alt="">
-      <span>${esc(r.title || '')}${r.year ? ' · ' + esc(String(r.year)) : ''}</span>
-    </button>`).join('');
-}
-function pickDiscogsCover(i) {
-  const r = discogsResults[i];
-  if (!r) return;
-  document.getElementById('rf-artwork').value = r.cover_image || r.thumb;
-  updateArtworkPreview();
-  closeModal('discogs-modal');
-  toast('Cover updated from Discogs');
-}
-
 // ─────────────────────────────────────────
 // EXPORT / IMPORT
 // ─────────────────────────────────────────
