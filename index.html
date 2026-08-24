@@ -251,11 +251,13 @@ body.edit-mode .record:hover .cover-actions, body.edit-mode .record:focus-within
 
 
 /* Star rating — a colored ★★★★★ layer clipped to a % width sits on top of a dim ★★★★★
-   background layer, so half-star fills are a true partial-character clip, not a glyph. */
+   background layer, so half-star fills are a true partial-character clip, not a glyph.
+   The colored layer is a real child span with its width set inline (not a ::before driven
+   by a CSS custom property) — iOS/iPadOS home-screen (WKWebView) Safari has a known bug
+   where custom properties feeding a pseudo-element's width don't reliably resolve/update,
+   which showed up as ratings always rendering full. */
 .star-rating{position:relative; display:inline-block; letter-spacing:2px; color:rgba(255,255,255,.16); line-height:1;}
-.star-rating::before{
-  content:'★★★★★'; position:absolute; inset:0; width:var(--pct,0%); overflow:hidden; white-space:nowrap; color:#e8b64a;
-}
+.star-rating-fill{position:absolute; inset:0; overflow:hidden; white-space:nowrap; color:#e8b64a;}
 .star-rating.sm{font-size:11px; letter-spacing:1px;}
 .rating-picker{display:flex; align-items:center; gap:12px; flex-wrap:wrap;}
 .rating-picker .star-rating{font-size:23px; letter-spacing:4px;}
@@ -338,7 +340,8 @@ body.edit-mode .record:hover .cover-actions, body.edit-mode .record:focus-within
     <option value="compilation">Compilation</option>
   </select>
   <select id="owned-filter" onchange="setOwnedFilter(this.value)">
-    <option value="">All owned</option>
+    <option value="">Any</option>
+    <option value="owned">All owned</option>
     <option value="no">Not owned</option>
     <option value="vinyl">Vinyl</option>
     <option value="cd">CD</option>
@@ -438,7 +441,7 @@ body.edit-mode .record:hover .cover-actions, body.edit-mode .record:focus-within
     <div class="field">
       <label>Rating</label>
       <div class="rating-picker">
-        <span class="star-rating" id="rf-rating-stars" style="--pct:0%">★★★★★</span>
+        <span class="star-rating" id="rf-rating-stars">★★★★★<span class="star-rating-fill" id="rf-rating-fill" style="width:0%">★★★★★</span></span>
         <input type="range" id="rf-rating" min="0" max="10" step="1" value="0" oninput="updateRatingPicker(this.value)">
         <span id="rf-rating-label">Unrated</span>
       </div>
@@ -723,7 +726,8 @@ function filteredSortedRecords() {
     list = list.filter(r => (r.tags||'').split(',').map(t => t.trim().toLowerCase()).includes(tf));
   }
   if (formatFilter) list = list.filter(r => (r.type || 'album') === formatFilter);
-  if (ownedFilter) list = list.filter(r => (r.owned || 'no') === ownedFilter);
+  if (ownedFilter === 'owned') list = list.filter(r => (r.owned || 'no') !== 'no');
+  else if (ownedFilter) list = list.filter(r => (r.owned || 'no') === ownedFilter);
   if (artistFilter) list = list.filter(r => (r.artist || '') === artistFilter);
   if (yearFilter) list = list.filter(r => String(r.year || '') === yearFilter);
   if (ratingFilter !== '') {
@@ -759,7 +763,7 @@ function coverInnerHTML(r) {
         <div class="cover-caption">
           <strong>${esc(r.title)}</strong>
           <span>${esc(r.artist || '')}${r.year ? ' · ' + esc(String(r.year)) : ''}</span>
-          ${r.rating ? `<span class="star-rating sm" style="--pct:${r.rating / 5 * 100}%" title="${r.rating} / 5">★★★★★</span>` : ''}
+          ${r.rating ? `<span class="star-rating sm" title="${r.rating} / 5">★★★★★<span class="star-rating-fill" style="width:${r.rating / 5 * 100}%">★★★★★</span></span>` : ''}
         </div>
       </div>`;
 }
@@ -831,7 +835,7 @@ let editingId = null;
 // Half-star rating: the range input carries half-star units (0-10); rating = value/2.
 function updateRatingPicker(v) {
   const rating = (+v) / 2;
-  document.getElementById('rf-rating-stars').style.setProperty('--pct', (rating / 5 * 100) + '%');
+  document.getElementById('rf-rating-fill').style.width = (rating / 5 * 100) + '%';
   document.getElementById('rf-rating-label').textContent = rating > 0 ? (rating % 1 ? rating.toFixed(1) : rating) + ' / 5' : 'Unrated';
 }
 function resetRecordForm() {
