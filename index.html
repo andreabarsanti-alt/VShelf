@@ -181,8 +181,7 @@ main{padding-bottom:60px;}
   opacity:0; transition:opacity .15s;
 }
 body.edit-mode .cover-actions{display:flex;}
-body.edit-mode .record:hover .cover-actions, body.edit-mode .record:focus-within .cover-actions,
-body.edit-mode .spine:hover .cover-actions, body.edit-mode .spine:focus-within .cover-actions{opacity:1;}
+body.edit-mode .record:hover .cover-actions, body.edit-mode .record:focus-within .cover-actions{opacity:1;}
 @media (hover:none){ body.edit-mode .cover-actions{opacity:.92;} }
 .cover-caption{
   position:absolute; left:0; right:0; bottom:0; z-index:2;
@@ -192,56 +191,6 @@ body.edit-mode .spine:hover .cover-actions, body.edit-mode .spine:focus-within .
 }
 .cover-caption strong{font-size:12.5px; line-height:1.25; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
 .cover-caption span{font-size:11px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
-
-/* ── Crate view ── an alternative to the flat grid: records as thin spines packed
-   side by side like flipping through a record-store crate, each spine tinted by a hash
-   of its id so the row reads as varied sleeves. Hover/focus lifts the spine and pops
-   the full cover (same .cover markup as the grid) above it. ───────────────────── */
-.crate-grid{
-  display:flex; align-items:flex-end; gap:2px; overflow-x:auto; overflow-y:hidden;
-  /* min-height reserves room for the popped-up cover *inside* the box, rather than
-     relying on overflow-y:visible — which the CSS spec coerces to auto (and thus
-     clipping) the moment overflow-x is anything but visible too. */
-  min-height:420px;
-  padding:20px 26px 46px;
-  background-image:linear-gradient(180deg, transparent 0%, transparent calc(100% - 34px),
-    var(--wood-dark) calc(100% - 34px), var(--wood) calc(100% - 31px), var(--wood) 100%);
-}
-.crate-grid.hidden{display:none;}
-.shelf-grid.hidden{display:none;}
-.spine{
-  position:relative; flex:none; width:30px; height:190px; border-radius:3px 3px 1px 1px;
-  cursor:pointer; transition:transform .18s ease, box-shadow .18s ease; outline:none;
-  box-shadow:1px 0 0 rgba(0,0,0,.35), -1px 0 0 rgba(255,255,255,.04);
-  display:flex; align-items:flex-end; justify-content:center; padding-bottom:9px;
-}
-.spine:hover, .spine:focus-within{
-  transform:translateY(-16px) rotate(-1.2deg); z-index:5;
-  box-shadow:0 18px 26px -12px rgba(0,0,0,.65), 1px 0 0 rgba(0,0,0,.35);
-}
-.spine-label{
-  writing-mode:vertical-rl; transform:rotate(180deg); white-space:nowrap;
-  font-size:10.5px; font-weight:600; letter-spacing:.2px; color:rgba(255,255,255,.85);
-  max-height:168px; overflow:hidden; text-overflow:ellipsis;
-  text-shadow:0 1px 2px rgba(0,0,0,.55); pointer-events:none;
-}
-.spine-pop{
-  position:absolute; left:50%; bottom:100%; margin-bottom:6px;
-  transform:translate(-50%,8px) scale(.94); transform-origin:bottom center;
-  width:168px; opacity:0; visibility:hidden; pointer-events:none;
-  transition:opacity .15s ease, transform .15s ease, visibility .15s;
-}
-.spine:hover .spine-pop, .spine:focus-within .spine-pop{
-  opacity:1; visibility:visible; pointer-events:auto; transform:translate(-50%,0) scale(1);
-}
-.spine-pop .cover{box-shadow:0 20px 34px -12px rgba(0,0,0,.7);}
-
-.view-toggle{display:flex; gap:2px; background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:2px;}
-.view-toggle button{
-  background:none; border:none; color:var(--muted); width:28px; height:26px; border-radius:6px;
-  cursor:pointer; font-size:13.5px; display:flex; align-items:center; justify-content:center;
-}
-.view-toggle button.active{background:var(--accent); color:var(--accent-ink);}
 
 .edit-toggle{display:flex; align-items:center; gap:6px; font-size:13px; color:var(--muted); cursor:pointer; user-select:none; white-space:nowrap;}
 .edit-toggle input{accent-color:var(--accent); cursor:pointer; width:14px; height:14px;}
@@ -352,10 +301,6 @@ body.edit-mode .spine:hover .cover-actions, body.edit-mode .spine:focus-within .
     <input type="search" id="search-input" placeholder="Search title, artist, tag…" oninput="setSearch(this.value)">
   </div>
   <div class="hdr-actions">
-    <div class="view-toggle" role="group" aria-label="Shelf view">
-      <button type="button" class="view-btn" id="view-btn-shelf" onclick="setViewMode('shelf')" title="Shelf view">🗄</button>
-      <button type="button" class="view-btn" id="view-btn-crate" onclick="setViewMode('crate')" title="Crate view — flip through spines">📦</button>
-    </div>
     <label class="edit-toggle" title="Show edit/remove icons on records">
       <input type="checkbox" id="edit-mode-toggle" onchange="setEditMode(this.checked)">
       <span>Edit mode</span>
@@ -392,6 +337,13 @@ body.edit-mode .spine:hover .cover-actions, body.edit-mode .spine:focus-within .
     <option value="single">Single</option>
     <option value="compilation">Compilation</option>
   </select>
+  <select id="owned-filter" onchange="setOwnedFilter(this.value)">
+    <option value="">All owned</option>
+    <option value="no">Not owned</option>
+    <option value="vinyl">Vinyl</option>
+    <option value="cd">CD</option>
+    <option value="other">Other</option>
+  </select>
   <select id="artist-filter" onchange="setArtistFilter(this.value)"><option value="">All artists</option></select>
   <select id="year-filter" onchange="setYearFilter(this.value)"><option value="">All years</option></select>
   <select id="tag-filter" onchange="setTagFilter(this.value)"><option value="">All tags</option></select>
@@ -412,6 +364,7 @@ body.edit-mode .spine:hover .cover-actions, body.edit-mode .spine:focus-within .
     <option value="year_desc">Year: newest</option>
     <option value="year_asc">Year: oldest</option>
     <option value="type_asc">Format A–Z</option>
+    <option value="owned_asc">Owned A–Z</option>
     <option value="tags_asc">Tags A–Z</option>
     <option value="rating_desc">Highest rated</option>
     <option value="rating_asc">Lowest rated</option>
@@ -420,7 +373,6 @@ body.edit-mode .spine:hover .cover-actions, body.edit-mode .spine:focus-within .
 
 <main>
   <div id="shelf-grid" class="shelf-grid"></div>
-  <div id="crate-grid" class="crate-grid hidden"></div>
   <div id="empty-state" class="state-msg hidden">
     <div class="big">💿</div>
     <h2>Your shelf is empty</h2>
@@ -472,6 +424,11 @@ body.edit-mode .spine:hover .cover-actions, body.edit-mode .spine:focus-within .
         <select id="rf-type"><option value="album">Album</option><option value="single">Single</option><option value="compilation">Compilation</option></select>
       </div>
       <div class="field" style="flex:1"><label>Year</label><input type="number" id="rf-year" placeholder="2015" min="1900" max="2099" step="1"></div>
+    </div>
+    <div class="field-row">
+      <div class="field" style="flex:1"><label>Owned</label>
+        <select id="rf-owned"><option value="no">No</option><option value="vinyl">Vinyl</option><option value="cd">CD</option><option value="other">Other</option></select>
+      </div>
     </div>
     <div class="field">
       <label>Tags</label>
@@ -550,7 +507,6 @@ const STORAGE_KEY = 'vshelf_v1_' + PROFILE;
 const SEED_FILE   = 'vshelf_' + PROFILE + '.json';
 const GH_CFG_KEY  = 'vshelf_github_config_' + PROFILE;
 const EDIT_MODE_KEY = 'vshelf_edit_mode'; // global — a UI preference, not shelf data
-const VIEW_MODE_KEY = 'vshelf_view_mode'; // global — ditto
 
 const PROFILES_KEY = 'vshelf_profiles';
 const DEFAULT_PROFILES = [{ id: 'main', name: 'Main Shelf' }];
@@ -651,8 +607,6 @@ async function boot() {
   const editOn = localStorage.getItem(EDIT_MODE_KEY) === '1';
   document.getElementById('edit-mode-toggle').checked = editOn;
   document.body.classList.toggle('edit-mode', editOn);
-  viewMode = localStorage.getItem(VIEW_MODE_KEY) === 'crate' ? 'crate' : 'shelf';
-  updateViewToggleUI();
   const saved = localStorage.getItem(STORAGE_KEY);
   if (saved) {
     try { db = JSON.parse(saved); if (!Array.isArray(db.records)) db.records = []; }
@@ -673,7 +627,7 @@ async function boot() {
 
 function dbFingerprint(d) {
   return JSON.stringify((d.records || [])
-    .map(r => [r.id, r.title, r.artist, r.appleMusicUrl, r.artworkUrl, r.tags, r.type, r.rating, r.year].join('|'))
+    .map(r => [r.id, r.title, r.artist, r.appleMusicUrl, r.artworkUrl, r.tags, r.type, r.rating, r.year, r.owned].join('|'))
     .sort());
 }
 async function checkRepoSync() {
@@ -744,26 +698,16 @@ function setEditMode(on) {
   document.body.classList.toggle('edit-mode', on);
   localStorage.setItem(EDIT_MODE_KEY, on ? '1' : '0');
 }
-let viewMode = 'shelf';
-function setViewMode(v) {
-  viewMode = v === 'crate' ? 'crate' : 'shelf';
-  localStorage.setItem(VIEW_MODE_KEY, viewMode);
-  updateViewToggleUI();
-  renderShelf();
-}
-function updateViewToggleUI() {
-  document.getElementById('view-btn-shelf').classList.toggle('active', viewMode === 'shelf');
-  document.getElementById('view-btn-crate').classList.toggle('active', viewMode === 'crate');
-}
 
 // ─────────────────────────────────────────
 // SHELF RENDERING / FILTERS
 // ─────────────────────────────────────────
-let searchQuery = '', sortMode = 'added_desc', tagFilter = '', formatFilter = '', artistFilter = '', yearFilter = '', ratingFilter = '';
+let searchQuery = '', sortMode = 'added_desc', tagFilter = '', formatFilter = '', ownedFilter = '', artistFilter = '', yearFilter = '', ratingFilter = '';
 function setSearch(v) { searchQuery = v; renderShelf(); }
 function setSortMode(v) { sortMode = v; renderShelf(); }
 function setTagFilter(v) { tagFilter = v; renderShelf(); }
 function setFormatFilter(v) { formatFilter = v; renderShelf(); }
+function setOwnedFilter(v) { ownedFilter = v; renderShelf(); }
 function setArtistFilter(v) { artistFilter = v; renderShelf(); }
 function setYearFilter(v) { yearFilter = v; renderShelf(); }
 function setRatingFilter(v) { ratingFilter = v; renderShelf(); }
@@ -779,6 +723,7 @@ function filteredSortedRecords() {
     list = list.filter(r => (r.tags||'').split(',').map(t => t.trim().toLowerCase()).includes(tf));
   }
   if (formatFilter) list = list.filter(r => (r.type || 'album') === formatFilter);
+  if (ownedFilter) list = list.filter(r => (r.owned || 'no') === ownedFilter);
   if (artistFilter) list = list.filter(r => (r.artist || '') === artistFilter);
   if (yearFilter) list = list.filter(r => String(r.year || '') === yearFilter);
   if (ratingFilter !== '') {
@@ -793,6 +738,7 @@ function filteredSortedRecords() {
     year_desc:   (a,b) => (b.year||0) - (a.year||0) || (a.title||'').localeCompare(b.title||''),
     year_asc:    (a,b) => (a.year||0) - (b.year||0) || (a.title||'').localeCompare(b.title||''),
     type_asc:    (a,b) => (a.type||'album').localeCompare(b.type||'album') || (a.title||'').localeCompare(b.title||''),
+    owned_asc:   (a,b) => (a.owned||'no').localeCompare(b.owned||'no') || (a.title||'').localeCompare(b.title||''),
     tags_asc:    (a,b) => (a.tags||'').localeCompare(b.tags||'') || (a.title||'').localeCompare(b.title||''),
     rating_desc: (a,b) => (b.rating||0) - (a.rating||0) || (a.title||'').localeCompare(b.title||''),
     rating_asc:  (a,b) => (a.rating||0) - (b.rating||0) || (a.title||'').localeCompare(b.title||''),
@@ -800,8 +746,6 @@ function filteredSortedRecords() {
   return list.sort(cmp);
 }
 
-// The inner ".cover" markup is shared between the plain grid card and the crate
-// spine's hover pop-up, so edit/remove/open behavior stays identical in both views.
 function coverInnerHTML(r) {
   const hasArt = !!r.artworkUrl;
   return `
@@ -826,22 +770,6 @@ function recordCardHTML(r) {
       ${coverInnerHTML(r)}
     </div>`;
 }
-// Deterministic hue from a string so each crate spine gets a stable, varied tint
-// (no real per-cover color extraction — a cheap stand-in that still reads as "sleeves").
-function hashHue(str) {
-  let h = 0;
-  for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) % 360;
-  return h;
-}
-function spineHTML(r) {
-  const hue = hashHue(r.id || r.title || '');
-  const bg = `linear-gradient(180deg, hsl(${hue},30%,23%), hsl(${hue},36%,12%))`;
-  return `
-    <div class="spine" data-id="${esc(r.id)}" style="background:${bg}" tabindex="0">
-      <div class="spine-label">${esc(r.title)}${r.artist ? ' · ' + esc(r.artist) : ''}</div>
-      <div class="spine-pop">${coverInnerHTML(r)}</div>
-    </div>`;
-}
 
 function renderShelf() {
   const list = filteredSortedRecords();
@@ -852,13 +780,8 @@ function renderShelf() {
   document.getElementById('empty-state').classList.toggle('hidden', db.records.length !== 0);
   document.getElementById('no-results-state').classList.toggle('hidden', !(db.records.length && !list.length));
 
-  const showGrid = viewMode === 'shelf';
-  const gridEl = document.getElementById('shelf-grid'), crateEl = document.getElementById('crate-grid');
-  gridEl.classList.toggle('hidden', !showGrid);
-  crateEl.classList.toggle('hidden', showGrid);
-  const hasResults = db.records.length && list.length;
-  gridEl.innerHTML  = (hasResults && showGrid)  ? list.map(recordCardHTML).join('') : '';
-  crateEl.innerHTML = (hasResults && !showGrid) ? list.map(spineHTML).join('')      : '';
+  const gridEl = document.getElementById('shelf-grid');
+  gridEl.innerHTML = (db.records.length && list.length) ? list.map(recordCardHTML).join('') : '';
 
   renderArtistFilterOptions();
   renderYearFilterOptions();
@@ -914,6 +837,7 @@ function updateRatingPicker(v) {
 function resetRecordForm() {
   ['rf-title','rf-artist','rf-link','rf-artwork','rf-tags','rf-year'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('rf-type').value = 'album';
+  document.getElementById('rf-owned').value = 'no';
   document.getElementById('am-link-input').value = '';
   document.getElementById('am-link-status').textContent = '';
   document.getElementById('rf-rating').value = 0;
@@ -939,6 +863,7 @@ function openEditModal(id) {
   document.getElementById('rf-artwork').value = r.artworkUrl || '';
   document.getElementById('rf-tags').value = r.tags || '';
   document.getElementById('rf-type').value = r.type || 'album';
+  document.getElementById('rf-owned').value = r.owned || 'no';
   document.getElementById('rf-year').value = r.year || '';
   document.getElementById('rf-rating').value = (r.rating || 0) * 2;
   updateRatingPicker((r.rating || 0) * 2);
@@ -959,15 +884,16 @@ function saveRecordForm() {
   const artwork = document.getElementById('rf-artwork').value.trim();
   const tags = document.getElementById('rf-tags').value.trim();
   const type = document.getElementById('rf-type').value || 'album';
+  const owned = document.getElementById('rf-owned').value || 'no';
   const yearRaw = document.getElementById('rf-year').value.trim();
   const year = yearRaw ? +yearRaw : null;
   const rating = (+document.getElementById('rf-rating').value) / 2;
   if (!title || !link) { toast('Title and Apple Music link are required'); return; }
   if (editingId) {
     const r = db.records.find(x => x.id === editingId);
-    if (r) Object.assign(r, { title, artist, appleMusicUrl: link, artworkUrl: artwork, tags, type, year, rating });
+    if (r) Object.assign(r, { title, artist, appleMusicUrl: link, artworkUrl: artwork, tags, type, owned, year, rating });
   } else {
-    db.records.unshift({ id: genId(), title, artist, appleMusicUrl: link, artworkUrl: artwork, tags, type, year, rating, addedAt: todayISO() });
+    db.records.unshift({ id: genId(), title, artist, appleMusicUrl: link, artworkUrl: artwork, tags, type, owned, year, rating, addedAt: todayISO() });
   }
   save(); renderShelf(); closeModal('record-modal');
   toast(editingId ? 'Record updated' : 'Added to shelf');
