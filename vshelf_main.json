@@ -1,3 +1,30 @@
 {
-  "records": []
+  "records": [
+    {
+      "id": "vmt7byh7som47",
+      "title": "Eagles",
+      "artist": "Eagles",
+      "appleMusicUrl": "https://music.apple.com/us/album/eagles/635791801?uo=4",
+      "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/8f/e7/f4/8fe7f417-d464-8879-b00e-3d4965a9cfd1/075596062329.jpg/1200x1200bb.jpg",
+      "tags": "",
+      "type": "album",
+      "owned": "no",
+      "year": 1972,
+      "rating": 0,
+      "addedAt": "2026-08-24"
+    },
+    {
+      "id": "vmt7a1wtsk5zu",
+      "title": "Bookends",
+      "artist": "Simon & Garfunkel",
+      "appleMusicUrl": "https://music.apple.com/us/album/bookends/203303421?uo=4",
+      "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music113/v4/1c/3c/09/1c3c0934-8ae5-fc87-2647-e104057d41f4/074640952920.jpg/1200x1200bb.jpg",
+      "tags": "",
+      "type": "album",
+      "owned": "vinyl",
+      "year": 1968,
+      "rating": 4,
+      "addedAt": "2026-08-24"
+    }
+  ]
 }
