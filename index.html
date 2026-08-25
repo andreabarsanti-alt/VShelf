@@ -186,13 +186,6 @@ main{padding-bottom:60px;}
   background:linear-gradient(155deg,#241d16,#151009);
 }
 .cover.art-fail .cover-fallback{display:flex;}
-.cover-actions{
-  position:absolute; top:7px; right:7px; z-index:2; display:none; gap:5px;
-  opacity:0; transition:opacity .15s;
-}
-body.edit-mode .cover-actions{display:flex;}
-body.edit-mode .record:hover .cover-actions, body.edit-mode .record:focus-within .cover-actions{opacity:1;}
-@media (hover:none){ body.edit-mode .cover-actions{opacity:.92;} }
 .cover-caption{
   position:absolute; left:0; right:0; bottom:0; z-index:2;
   padding:20px 9px 8px;
@@ -806,13 +799,9 @@ function groupRecords(list) {
 function coverInnerHTML(r) {
   const hasArt = !!r.artworkUrl;
   return `
-      <div class="cover ${hasArt ? '' : 'art-fail'}" onclick="openRecord('${esc(r.id)}')" tabindex="0">
+      <div class="cover ${hasArt ? '' : 'art-fail'}" onclick="handleCoverClick('${esc(r.id)}')" tabindex="0">
         ${hasArt ? `<img src="${esc(r.artworkUrl)}" alt="" loading="lazy" onerror="this.parentElement.classList.add('art-fail')">` : ''}
         <div class="cover-fallback">${esc(initials(r.title))}</div>
-        <div class="cover-actions">
-          <button type="button" class="icon-btn" onclick="event.stopPropagation(); openEditModal('${esc(r.id)}')" title="Edit">✎</button>
-          <button type="button" class="icon-btn danger" onclick="event.stopPropagation(); deleteRecord('${esc(r.id)}')" title="Remove">🗑</button>
-        </div>
         <div class="cover-caption">
           <strong>${esc(r.title)}</strong>
           <span>${esc(r.artist || '')}${r.year ? ' · ' + esc(String(r.year)) : ''}</span>
@@ -890,6 +879,13 @@ function openRecord(id) {
   const r = db.records.find(x => x.id === id);
   if (r && r.appleMusicUrl) window.open(r.appleMusicUrl, '_blank', 'noopener');
   else toast('No Apple Music link saved for this record');
+}
+// Cover click is mode-dependent: edit mode opens the edit panel (no more per-cover
+// pencil/trash icons — the edit modal's own delete button covers removal), otherwise
+// it opens the record's Apple Music link, same as always.
+function handleCoverClick(id) {
+  if (document.body.classList.contains('edit-mode')) openEditModal(id);
+  else openRecord(id);
 }
 
 // ─────────────────────────────────────────
