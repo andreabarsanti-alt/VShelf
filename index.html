@@ -83,6 +83,8 @@ select{-webkit-appearance:none; appearance:none; cursor:pointer; padding-right:2
 .shelf-tab{background:none; border:none; color:var(--muted); padding:7px 12px; border-radius:7px; font-size:13px; font-weight:500; cursor:pointer; white-space:nowrap;}
 .shelf-tab:hover{color:var(--ink);}
 .shelf-tab.active{background:var(--accent); color:var(--accent-ink); font-weight:600;}
+.shelf-tab:disabled{color:var(--muted-dim); cursor:not-allowed; opacity:.55;}
+.shelf-tab:disabled:hover{color:var(--muted-dim);}
 
 #profile-select{max-width:150px;}
 
@@ -305,7 +307,7 @@ main{padding-bottom:60px;}
   </div>
   <div class="shelf-tabs" role="tablist">
     <button type="button" class="shelf-tab active" data-shelf="music" onclick="switchShelf('music')">🎵 Music</button>
-    <button type="button" class="shelf-tab" data-shelf="movies" onclick="switchShelf('movies')">🎬 Movies</button>
+    <button type="button" class="shelf-tab" data-shelf="movies" onclick="switchShelf('movies')" disabled title="Coming later — the Movies shelf is still an experiment">🎬 Movies</button>
   </div>
   <select id="profile-select" onchange="switchProfile(this.value)"></select>
   <div class="hdr-search">
@@ -796,6 +798,11 @@ const MOVIE_CTX = {
 };
 function shelfCtx() { return currentShelf === 'movies' ? MOVIE_CTX : MUSIC_CTX; }
 function switchShelf(kind) {
+  // The Movies tab button is disabled (still experimental) — guard here too, not just in
+  // the DOM, so a stale localStorage[SHELF_TAB_KEY] from before it was disabled (or any
+  // future caller) can't land the app on a shelf its own tab says is unreachable.
+  const moviesTab = document.querySelector('.shelf-tab[data-shelf="movies"]');
+  if (kind === 'movies' && moviesTab && moviesTab.disabled) kind = 'music';
   currentShelf = kind === 'movies' ? 'movies' : 'music';
   localStorage.setItem(SHELF_TAB_KEY, currentShelf);
   document.querySelectorAll('.shelf-tab').forEach(t => t.classList.toggle('active', t.dataset.shelf === currentShelf));
