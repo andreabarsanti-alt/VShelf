@@ -255,9 +255,13 @@ body.edit-mode .record:hover .cover-actions, body.edit-mode .record:focus-within
    The colored layer is a real child span with its width set inline (not a ::before driven
    by a CSS custom property) — iOS/iPadOS home-screen (WKWebView) Safari has a known bug
    where custom properties feeding a pseudo-element's width don't reliably resolve/update,
-   which showed up as ratings always rendering full. */
+   which showed up as ratings always rendering full. The fill only sets top/left/bottom
+   (no `right`, no `inset` shorthand) so the explicit inline `width` is the sole horizontal
+   constraint — with `right:0` also set, the box is over-constrained and WKWebView resolves
+   it by honoring `right` over `width` instead of dropping `right` per spec, which silently
+   reintroduces the same always-full-stars bug even with the inline-width fix in place. */
 .star-rating{position:relative; display:inline-block; letter-spacing:2px; color:rgba(255,255,255,.16); line-height:1;}
-.star-rating-fill{position:absolute; inset:0; overflow:hidden; white-space:nowrap; color:#e8b64a;}
+.star-rating-fill{position:absolute; top:0; left:0; bottom:0; overflow:hidden; white-space:nowrap; color:#e8b64a;}
 .star-rating.sm{font-size:11px; letter-spacing:1px;}
 .rating-picker{display:flex; align-items:center; gap:12px; flex-wrap:wrap;}
 .rating-picker .star-rating{font-size:23px; letter-spacing:4px;}
