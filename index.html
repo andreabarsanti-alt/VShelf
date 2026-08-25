@@ -79,6 +79,11 @@ select{-webkit-appearance:none; appearance:none; cursor:pointer; padding-right:2
   background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);
   background-position:calc(100% - 14px) center, calc(100% - 9px) center; background-size:5px 5px; background-repeat:no-repeat;}
 
+.shelf-tabs{display:flex; gap:2px; background:var(--panel); border:1px solid var(--border); border-radius:9px; padding:2px; flex:none;}
+.shelf-tab{background:none; border:none; color:var(--muted); padding:7px 12px; border-radius:7px; font-size:13px; font-weight:500; cursor:pointer; white-space:nowrap;}
+.shelf-tab:hover{color:var(--ink);}
+.shelf-tab.active{background:var(--accent); color:var(--accent-ink); font-weight:600;}
+
 #profile-select{max-width:150px;}
 
 .hdr-search{flex:1 1 160px; min-width:120px; max-width:280px; position:relative;}
@@ -133,6 +138,7 @@ button.icon-btn.danger:hover{background:var(--danger); border-color:var(--danger
 
 /* ── Shelf ───────────────────────────── */
 main{padding-bottom:60px;}
+#music-panel.hidden, #movie-panel.hidden{display:none;}
 .shelf-grid{
   display:grid;
   grid-template-columns:repeat(auto-fill,minmax(var(--cover),1fr));
@@ -297,16 +303,20 @@ main{padding-bottom:60px;}
     <div class="disc"></div>
     <h1>v<span>Shelf</span></h1>
   </div>
+  <div class="shelf-tabs" role="tablist">
+    <button type="button" class="shelf-tab active" data-shelf="music" onclick="switchShelf('music')">🎵 Music</button>
+    <button type="button" class="shelf-tab" data-shelf="movies" onclick="switchShelf('movies')">🎬 Movies</button>
+  </div>
   <select id="profile-select" onchange="switchProfile(this.value)"></select>
   <div class="hdr-search">
-    <input type="search" id="search-input" placeholder="Search title, artist, tag…" oninput="setSearch(this.value)">
+    <input type="search" id="search-input" placeholder="Search title, artist, tag…" oninput="setSearchCurrent(this.value)">
   </div>
   <div class="hdr-actions">
-    <label class="edit-toggle" title="Show edit/remove icons on records">
+    <label class="edit-toggle" title="Click a cover to edit/remove it instead of opening its link">
       <input type="checkbox" id="edit-mode-toggle" onchange="setEditMode(this.checked)">
       <span>Edit mode</span>
     </label>
-    <button type="button" class="btn primary" onclick="openAddModal()">＋ Add Record</button>
+    <button type="button" class="btn primary" id="btn-add" onclick="addCurrent()">＋ Add Record</button>
     <button type="button" class="btn" id="btn-push" onclick="pushToGithub()">⬆ Push</button>
     <button type="button" class="btn" id="btn-pull" onclick="pullFromGithub()">⬇ Pull</button>
     <button type="button" class="btn" id="btn-force-refresh" onclick="forceRefresh()" title="Hard-reload the app and its data from what's published, bypassing the cache">🔄 Refresh</button>
@@ -317,6 +327,7 @@ main{padding-bottom:60px;}
         <button type="button" onclick="triggerImport()">⬆ Import JSON</button>
         <hr>
         <button type="button" onclick="openGithubConfigModal('push')">⚙ GitHub settings…</button>
+        <button type="button" onclick="openOmdbKeyModal()">🔑 OMDb API key…</button>
         <hr>
         <button type="button" onclick="openProfilesModal()">✎ Edit profiles…</button>
       </div>
@@ -324,69 +335,131 @@ main{padding-bottom:60px;}
   </div>
 </header>
 
-<div id="sync-banner" class="hidden">
-  <span id="sync-msg"></span>
-  <button type="button" class="btn primary" onclick="acceptSync()">Load repo version</button>
-  <button type="button" class="btn ghost" onclick="dismissSync()">Dismiss</button>
+<div id="music-panel">
+  <div id="sync-banner" class="hidden">
+    <span id="sync-msg"></span>
+    <button type="button" class="btn primary" onclick="acceptSync()">Load repo version</button>
+    <button type="button" class="btn ghost" onclick="dismissSync()">Dismiss</button>
+  </div>
+
+  <div class="toolbar">
+    <span id="shelf-count">0 records</span>
+    <select id="format-filter" onchange="setFormatFilter(this.value)">
+      <option value="">All formats</option>
+      <option value="album">Album</option>
+      <option value="single">Single</option>
+      <option value="compilation">Compilation</option>
+    </select>
+    <select id="owned-filter" onchange="setOwnedFilter(this.value)">
+      <option value="">Any</option>
+      <option value="owned">All owned</option>
+      <option value="no">Not owned</option>
+      <option value="vinyl">Vinyl</option>
+      <option value="cd">CD</option>
+      <option value="other">Other</option>
+    </select>
+    <select id="artist-filter" onchange="setArtistFilter(this.value)"><option value="">All artists</option></select>
+    <select id="year-filter" onchange="setYearFilter(this.value)"><option value="">All years</option></select>
+    <select id="tag-filter" onchange="setTagFilter(this.value)"><option value="">All tags</option></select>
+    <select id="rating-filter" onchange="setRatingFilter(this.value)">
+      <option value="">All ratings</option>
+      <option value="5">5 only</option>
+      <option value="4">4+</option>
+      <option value="3">3+</option>
+      <option value="2">2+</option>
+      <option value="1">1+</option>
+      <option value="0">Unrated</option>
+    </select>
+    <select id="sort-select" onchange="setSortMode(this.value)">
+      <option value="added_desc">Recently added</option>
+      <option value="added_asc">Oldest added</option>
+      <option value="title_asc">Title A–Z</option>
+      <option value="artist_asc">Artist A–Z</option>
+      <option value="year_desc">Year: newest</option>
+      <option value="year_asc">Year: oldest</option>
+      <option value="type_asc">Format A–Z</option>
+      <option value="owned_asc">Owned A–Z</option>
+      <option value="tags_asc">Tags A–Z</option>
+      <option value="rating_desc">Highest rated</option>
+      <option value="rating_asc">Lowest rated</option>
+    </select>
+  </div>
+
+  <main>
+    <div id="shelf-grid" class="shelf-grid"></div>
+    <div id="empty-state" class="state-msg hidden">
+      <div class="big">💿</div>
+      <h2>Your shelf is empty</h2>
+      <p>Paste an Apple Music link to add your first record.</p>
+      <button type="button" class="btn primary" onclick="openAddModal()">＋ Add Record</button>
+    </div>
+    <div id="no-results-state" class="state-msg hidden">
+      <div class="big">🔍</div>
+      <h2>No matches</h2>
+      <p>Nothing on the shelf matches that search or filter.</p>
+    </div>
+  </main>
 </div>
 
-<div class="toolbar">
-  <span id="shelf-count">0 records</span>
-  <select id="format-filter" onchange="setFormatFilter(this.value)">
-    <option value="">All formats</option>
-    <option value="album">Album</option>
-    <option value="single">Single</option>
-    <option value="compilation">Compilation</option>
-  </select>
-  <select id="owned-filter" onchange="setOwnedFilter(this.value)">
-    <option value="">Any</option>
-    <option value="owned">All owned</option>
-    <option value="no">Not owned</option>
-    <option value="vinyl">Vinyl</option>
-    <option value="cd">CD</option>
-    <option value="other">Other</option>
-  </select>
-  <select id="artist-filter" onchange="setArtistFilter(this.value)"><option value="">All artists</option></select>
-  <select id="year-filter" onchange="setYearFilter(this.value)"><option value="">All years</option></select>
-  <select id="tag-filter" onchange="setTagFilter(this.value)"><option value="">All tags</option></select>
-  <select id="rating-filter" onchange="setRatingFilter(this.value)">
-    <option value="">All ratings</option>
-    <option value="5">5 only</option>
-    <option value="4">4+</option>
-    <option value="3">3+</option>
-    <option value="2">2+</option>
-    <option value="1">1+</option>
-    <option value="0">Unrated</option>
-  </select>
-  <select id="sort-select" onchange="setSortMode(this.value)">
-    <option value="added_desc">Recently added</option>
-    <option value="added_asc">Oldest added</option>
-    <option value="title_asc">Title A–Z</option>
-    <option value="artist_asc">Artist A–Z</option>
-    <option value="year_desc">Year: newest</option>
-    <option value="year_asc">Year: oldest</option>
-    <option value="type_asc">Format A–Z</option>
-    <option value="owned_asc">Owned A–Z</option>
-    <option value="tags_asc">Tags A–Z</option>
-    <option value="rating_desc">Highest rated</option>
-    <option value="rating_asc">Lowest rated</option>
-  </select>
-</div>
+<div id="movie-panel" class="hidden">
+  <div class="toolbar">
+    <span id="movie-shelf-count">0 movies</span>
+    <select id="movie-service-filter" onchange="setMovieServiceFilter(this.value)">
+      <option value="">All services</option>
+      <option value="netflix">Netflix</option>
+      <option value="prime">Prime Video</option>
+      <option value="disney">Disney+</option>
+      <option value="max">Max</option>
+      <option value="hulu">Hulu</option>
+      <option value="appletv">Apple TV+</option>
+      <option value="paramount">Paramount+</option>
+      <option value="other">Other</option>
+    </select>
+    <select id="movie-watched-filter" onchange="setMovieWatchedFilter(this.value)">
+      <option value="">Any</option>
+      <option value="yes">Watched</option>
+      <option value="no">Not watched</option>
+    </select>
+    <select id="movie-year-filter" onchange="setMovieYearFilter(this.value)"><option value="">All years</option></select>
+    <select id="movie-tag-filter" onchange="setMovieTagFilter(this.value)"><option value="">All tags</option></select>
+    <select id="movie-rating-filter" onchange="setMovieRatingFilter(this.value)">
+      <option value="">All ratings</option>
+      <option value="5">5 only</option>
+      <option value="4">4+</option>
+      <option value="3">3+</option>
+      <option value="2">2+</option>
+      <option value="1">1+</option>
+      <option value="0">Unrated</option>
+    </select>
+    <select id="movie-sort-select" onchange="setMovieSortMode(this.value)">
+      <option value="added_desc">Recently added</option>
+      <option value="added_asc">Oldest added</option>
+      <option value="title_asc">Title A–Z</option>
+      <option value="year_desc">Year: newest</option>
+      <option value="year_asc">Year: oldest</option>
+      <option value="service_asc">Service A–Z</option>
+      <option value="watched_asc">Watched A–Z</option>
+      <option value="tags_asc">Tags A–Z</option>
+      <option value="rating_desc">Highest rated</option>
+      <option value="rating_asc">Lowest rated</option>
+    </select>
+  </div>
 
-<main>
-  <div id="shelf-grid" class="shelf-grid"></div>
-  <div id="empty-state" class="state-msg hidden">
-    <div class="big">💿</div>
-    <h2>Your shelf is empty</h2>
-    <p>Paste an Apple Music link to add your first record.</p>
-    <button type="button" class="btn primary" onclick="openAddModal()">＋ Add Record</button>
-  </div>
-  <div id="no-results-state" class="state-msg hidden">
-    <div class="big">🔍</div>
-    <h2>No matches</h2>
-    <p>Nothing on the shelf matches that search or filter.</p>
-  </div>
-</main>
+  <main>
+    <div id="movie-shelf-grid" class="shelf-grid"></div>
+    <div id="movie-empty-state" class="state-msg hidden">
+      <div class="big">🎬</div>
+      <h2>Your movie shelf is empty</h2>
+      <p>Paste an IMDb link to fetch details, and a streaming link to open it later.</p>
+      <button type="button" class="btn primary" onclick="openAddMovieModal()">＋ Add Movie</button>
+    </div>
+    <div id="movie-no-results-state" class="state-msg hidden">
+      <div class="big">🔍</div>
+      <h2>No matches</h2>
+      <p>Nothing on the shelf matches that search or filter.</p>
+    </div>
+  </main>
+</div>
 
 <!-- Add / Edit record modal -->
 <div class="modal" id="record-modal">
@@ -454,11 +527,104 @@ main{padding-bottom:60px;}
   </div>
 </div>
 
+<!-- Add / Edit movie modal -->
+<div class="modal" id="movie-modal">
+  <div class="backdrop" onclick="closeModal('movie-modal')"></div>
+  <div class="modal-box wide">
+    <h3><span id="movie-modal-title">Add Movie</span><button type="button" class="modal-close" onclick="closeModal('movie-modal')">✕</button></h3>
+
+    <div class="field">
+      <label>IMDb Link</label>
+      <div class="inline-row">
+        <input type="url" id="mf-imdb-input" placeholder="https://www.imdb.com/title/tt…">
+        <button type="button" class="btn" onclick="fetchFromImdbLink()">Fetch</button>
+      </div>
+      <div id="mf-imdb-status"></div>
+      <p class="hint">Paste the movie's IMDb page link — title, year, poster and IMDb rating fill in automatically. This is only used to look up details; it isn't what opens when you click the cover.</p>
+    </div>
+
+    <div class="divider-label">Movie details</div>
+
+    <div class="art-preview-row">
+      <div class="art-preview" id="movie-art-preview">🎬</div>
+      <div class="art-preview-fields">
+        <div class="field">
+          <label>Poster URL</label>
+          <input type="text" id="mf-poster" placeholder="Filled automatically, or paste your own" oninput="updateMoviePosterPreview()">
+        </div>
+        <p class="hint" id="mf-imdb-rating-hint"></p>
+      </div>
+    </div>
+
+    <div class="field-row">
+      <div class="field" style="flex:2"><label>Title *</label><input type="text" id="mf-title" placeholder="Movie or show title"></div>
+      <div class="field" style="flex:1"><label>Year</label><input type="number" id="mf-year" placeholder="2015" min="1900" max="2099" step="1"></div>
+    </div>
+    <div class="field">
+      <label>Streaming Link *</label>
+      <input type="url" id="mf-streaming" placeholder="https://www.netflix.com/title/…">
+      <p class="hint">Wherever you actually watch it — Netflix, Prime Video, etc. This is what opens when you click the cover.</p>
+    </div>
+    <div class="field-row">
+      <div class="field" style="flex:1"><label>Service</label>
+        <select id="mf-service">
+          <option value="netflix">Netflix</option>
+          <option value="prime">Prime Video</option>
+          <option value="disney">Disney+</option>
+          <option value="max">Max</option>
+          <option value="hulu">Hulu</option>
+          <option value="appletv">Apple TV+</option>
+          <option value="paramount">Paramount+</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+      <div class="field" style="flex:1"><label>Watched</label>
+        <select id="mf-watched"><option value="no">No</option><option value="yes">Yes</option></select>
+      </div>
+    </div>
+    <div class="field">
+      <label>Tags</label>
+      <input type="text" id="mf-tags" list="movie-tag-list" placeholder="sci-fi, weeknight, favorite…">
+      <datalist id="movie-tag-list"></datalist>
+    </div>
+    <div class="field">
+      <label>Rating</label>
+      <div class="rating-picker">
+        <input type="range" id="mf-rating" min="0" max="10" step="1" value="0" oninput="updateMovieRatingPicker(this.value)">
+        <span id="mf-rating-label">Unrated</span>
+      </div>
+    </div>
+    <input type="hidden" id="mf-imdb">
+
+    <div class="modal-footer">
+      <button type="button" class="btn danger" id="mf-delete-btn" style="display:none;background:transparent;border-color:var(--danger);color:var(--danger);" onclick="deleteMovie(editingMovieId, true)">🗑 Remove</button>
+      <span class="spacer"></span>
+      <button type="button" class="btn ghost" onclick="closeModal('movie-modal')">Cancel</button>
+      <button type="button" class="btn primary" onclick="saveMovieForm()">Save to shelf</button>
+    </div>
+  </div>
+</div>
+
+<!-- OMDb API key -->
+<div class="modal" id="omdb-modal">
+  <div class="backdrop" onclick="closeModal('omdb-modal')"></div>
+  <div class="modal-box">
+    <h3><span>OMDb API key</span><button type="button" class="modal-close" onclick="closeModal('omdb-modal')">✕</button></h3>
+    <div class="field"><label>API key</label><input type="text" id="omdb-key-input" placeholder="e.g. a1b2c3d4"></div>
+    <p class="hint">IMDb itself has no public API — the Movies shelf fetches its metadata (title, year, poster, rating) through OMDb, which wraps IMDb's data. Get a free key at <a href="https://www.omdbapi.com/apikey.aspx" target="_blank" rel="noopener">omdbapi.com/apikey.aspx</a> (1,000 lookups/day). Stored only in this browser.</p>
+    <div class="modal-footer">
+      <span class="spacer"></span>
+      <button type="button" class="btn ghost" onclick="closeModal('omdb-modal')">Cancel</button>
+      <button type="button" class="btn primary" onclick="saveOmdbKey()">Save</button>
+    </div>
+  </div>
+</div>
+
 <!-- GitHub config -->
 <div class="modal" id="github-modal">
   <div class="backdrop" onclick="closeModal('github-modal')"></div>
   <div class="modal-box">
-    <h3 id="github-modal-title">Push to GitHub<button type="button" class="modal-close" onclick="closeModal('github-modal')">✕</button></h3>
+    <h3><span id="github-modal-title">Push to GitHub</span><button type="button" class="modal-close" onclick="closeModal('github-modal')">✕</button></h3>
     <div class="field"><label>Personal access token</label><input type="text" id="gh-token" placeholder="ghp_…"></div>
     <div class="field-row">
       <div class="field"><label>Owner</label><input type="text" id="gh-owner"></div>
@@ -488,7 +654,7 @@ main{padding-bottom:60px;}
       <input type="text" id="new-profile-name" placeholder="New profile name…" onkeydown="if(event.key==='Enter'){event.preventDefault();addProfile();}">
       <button type="button" class="btn primary" onclick="addProfile()">Add</button>
     </div>
-    <p class="hint" style="margin-top:12px;">Each profile is its own shelf, own seed file (<code>vshelf_&lt;id&gt;.json</code>), own GitHub push target.</p>
+    <p class="hint" style="margin-top:12px;">Each profile is its own pair of shelves — own seed files (<code>vshelf_&lt;id&gt;.json</code> for Music, <code>vshelf_movies_&lt;id&gt;.json</code> for Movies), own GitHub push targets.</p>
   </div>
 </div>
 
@@ -508,6 +674,14 @@ const STORAGE_KEY = 'vshelf_v1_' + PROFILE;
 const SEED_FILE   = 'vshelf_' + PROFILE + '.json';
 const GH_CFG_KEY  = 'vshelf_github_config_' + PROFILE;
 const EDIT_MODE_KEY = 'vshelf_edit_mode'; // global — a UI preference, not shelf data
+
+// Movies shelf — same per-profile namespacing pattern as the music shelf above, just a
+// separate storage key / seed file / GitHub target so the two never collide.
+const MOVIE_STORAGE_KEY = 'vshelf_movies_v1_' + PROFILE;
+const MOVIE_SEED_FILE   = 'vshelf_movies_' + PROFILE + '.json';
+const MOVIE_GH_CFG_KEY  = 'vshelf_github_config_movies_' + PROFILE;
+const OMDB_KEY_STORAGE  = 'vshelf_omdb_key'; // global, not per-profile — a personal API credential, like EDIT_MODE_KEY
+const SHELF_TAB_KEY     = 'vshelf_active_shelf'; // global UI preference — which tab was open last
 
 const PROFILES_KEY = 'vshelf_profiles';
 const DEFAULT_PROFILES = [{ id: 'main', name: 'Main Shelf' }];
@@ -566,6 +740,8 @@ function deleteProfile(id) {
   saveProfiles(list.filter(p => p.id !== id));
   localStorage.removeItem('vshelf_v1_' + id);
   localStorage.removeItem('vshelf_github_config_' + id);
+  localStorage.removeItem('vshelf_movies_v1_' + id);
+  localStorage.removeItem('vshelf_github_config_movies_' + id);
   renderProfilesList(); renderProfileSelect();
   if (id === PROFILE) switchProfile(getProfiles()[0].id);
 }
@@ -598,6 +774,42 @@ document.addEventListener('keydown', e => {
 // ─────────────────────────────────────────
 let db = { records: [] };
 function save() { localStorage.setItem(STORAGE_KEY, JSON.stringify(db)); }
+let movieDb = { movies: [] };
+function saveMovies() { localStorage.setItem(MOVIE_STORAGE_KEY, JSON.stringify(movieDb)); }
+
+// ─────────────────────────────────────────
+// SHELF SWITCHING (Music ↔ Movies) — the two shelves have different record schemas so
+// filtering/sorting/rendering/the add-edit modal stay separate per kind, but the generic
+// plumbing (GitHub push/pull, export/import, force-refresh) is written once and driven by
+// whichever of these two context objects shelfCtx() currently points at.
+// ─────────────────────────────────────────
+let currentShelf = 'music';
+const MUSIC_CTX = {
+  kind: 'music', label: '', itemLabel: 'record', itemLabelPlural: 'records',
+  storageKey: STORAGE_KEY, seedFile: SEED_FILE, ghCfgKey: GH_CFG_KEY, arrayKey: 'records',
+  getDb: () => db, setDb: (d) => { db = d; }, render: () => renderShelf(),
+};
+const MOVIE_CTX = {
+  kind: 'movies', label: ' (Movies)', itemLabel: 'movie', itemLabelPlural: 'movies',
+  storageKey: MOVIE_STORAGE_KEY, seedFile: MOVIE_SEED_FILE, ghCfgKey: MOVIE_GH_CFG_KEY, arrayKey: 'movies',
+  getDb: () => movieDb, setDb: (d) => { movieDb = d; }, render: () => renderMovieShelf(),
+};
+function shelfCtx() { return currentShelf === 'movies' ? MOVIE_CTX : MUSIC_CTX; }
+function switchShelf(kind) {
+  currentShelf = kind === 'movies' ? 'movies' : 'music';
+  localStorage.setItem(SHELF_TAB_KEY, currentShelf);
+  document.querySelectorAll('.shelf-tab').forEach(t => t.classList.toggle('active', t.dataset.shelf === currentShelf));
+  document.getElementById('music-panel').classList.toggle('hidden', currentShelf !== 'music');
+  document.getElementById('movie-panel').classList.toggle('hidden', currentShelf !== 'movies');
+  document.getElementById('btn-add').textContent = currentShelf === 'movies' ? '＋ Add Movie' : '＋ Add Record';
+  document.getElementById('search-input').placeholder = currentShelf === 'movies' ? 'Search title, tag…' : 'Search title, artist, tag…';
+  // The search box is shared chrome, but each shelf keeps its own query state — resync
+  // its displayed value on switch so it never shows text that isn't what's actually
+  // filtering the shelf now visible.
+  document.getElementById('search-input').value = currentShelf === 'movies' ? movieSearchQuery : searchQuery;
+}
+function addCurrent() { currentShelf === 'movies' ? openAddMovieModal() : openAddModal(); }
+function setSearchCurrent(v) { currentShelf === 'movies' ? setMovieSearch(v) : setSearch(v); }
 
 async function boot() {
   if (new URLSearchParams(location.search).has('_hr')) {
@@ -622,8 +834,23 @@ async function boot() {
       }
     } catch {}
   }
+  const savedMovies = localStorage.getItem(MOVIE_STORAGE_KEY);
+  if (savedMovies) {
+    try { movieDb = JSON.parse(savedMovies); if (!Array.isArray(movieDb.movies)) movieDb.movies = []; }
+    catch { movieDb = { movies: [] }; }
+  } else {
+    try {
+      const r = await fetch(MOVIE_SEED_FILE);
+      if (r.ok) {
+        const d = await r.json();
+        if (Array.isArray(d.movies)) { movieDb = d; saveMovies(); }
+      }
+    } catch {}
+  }
   renderProfileSelect();
   renderShelf();
+  renderMovieShelf();
+  switchShelf(localStorage.getItem(SHELF_TAB_KEY) === 'movies' ? 'movies' : 'music');
 }
 
 function dbFingerprint(d) {
@@ -661,15 +888,17 @@ function acceptSync() {
 function dismissSync() { document.getElementById('sync-banner').classList.add('hidden'); }
 
 async function forceRefresh() {
-  if (!confirm('Force refresh from the published ' + SEED_FILE + '? Any local changes not yet pushed will be lost, and the page will reload.')) return;
+  const ctx = shelfCtx();
+  if (!confirm('Force refresh from the published ' + ctx.seedFile + '? Any local changes not yet pushed will be lost, and the page will reload.')) return;
   const btn = document.getElementById('btn-force-refresh');
   btn.disabled = true; btn.textContent = '🔄…';
   try {
-    const r = await fetch(SEED_FILE + '?_=' + Date.now());
+    const r = await fetch(ctx.seedFile + '?_=' + Date.now());
     if (!r.ok) throw new Error(`GET ${r.status}`);
     const d = await r.json();
-    if (!Array.isArray(d.records)) throw new Error('Invalid data');
-    db = d; save();
+    if (!Array.isArray(d[ctx.arrayKey])) throw new Error('Invalid data');
+    ctx.setDb(d);
+    localStorage.setItem(ctx.storageKey, JSON.stringify(d));
     hardReloadPage();
   } catch (err) {
     toast('Refresh failed: ' + err.message, 4000);
@@ -889,6 +1118,176 @@ function handleCoverClick(id) {
 }
 
 // ─────────────────────────────────────────
+// MOVIE SHELF RENDERING / FILTERS — mirrors the music shelf section above field-for-field,
+// just against movieDb.movies and the movie-specific schema (service/watched instead of
+// format/owned, no artist). Kept as its own parallel implementation rather than unified
+// with the music one above since the two schemas genuinely differ; the schema-agnostic
+// plumbing (GitHub push/pull, export/import, force-refresh) is what's actually shared —
+// see shelfCtx() above.
+// ─────────────────────────────────────────
+let movieSearchQuery = '', movieSortMode = 'added_desc', movieTagFilter = '', movieServiceFilter = '', movieWatchedFilter = '', movieYearFilter = '', movieRatingFilter = '';
+function setMovieSearch(v) { movieSearchQuery = v; renderMovieShelf(); }
+function setMovieSortMode(v) { movieSortMode = v; renderMovieShelf(); }
+function setMovieTagFilter(v) { movieTagFilter = v; renderMovieShelf(); }
+function setMovieServiceFilter(v) { movieServiceFilter = v; renderMovieShelf(); }
+function setMovieWatchedFilter(v) { movieWatchedFilter = v; renderMovieShelf(); }
+function setMovieYearFilter(v) { movieYearFilter = v; renderMovieShelf(); }
+function setMovieRatingFilter(v) { movieRatingFilter = v; renderMovieShelf(); }
+
+function filteredSortedMovies() {
+  let list = movieDb.movies.slice();
+  if (movieSearchQuery.trim()) {
+    const q = movieSearchQuery.trim().toLowerCase();
+    list = list.filter(m => (m.title||'').toLowerCase().includes(q) || (m.tags||'').toLowerCase().includes(q));
+  }
+  if (movieTagFilter) {
+    const tf = movieTagFilter.toLowerCase();
+    list = list.filter(m => (m.tags||'').split(',').map(t => t.trim().toLowerCase()).includes(tf));
+  }
+  if (movieServiceFilter) list = list.filter(m => (m.service || 'other') === movieServiceFilter);
+  if (movieWatchedFilter) list = list.filter(m => (m.watched || 'no') === movieWatchedFilter);
+  if (movieYearFilter) list = list.filter(m => String(m.year || '') === movieYearFilter);
+  if (movieRatingFilter !== '') {
+    const rf = +movieRatingFilter;
+    list = list.filter(m => rf === 0 ? !m.rating : (m.rating || 0) >= rf);
+  }
+  const cmp = {
+    added_desc:   (a,b) => (b.addedAt||'').localeCompare(a.addedAt||''),
+    added_asc:    (a,b) => (a.addedAt||'').localeCompare(b.addedAt||''),
+    title_asc:    (a,b) => (a.title||'').localeCompare(b.title||''),
+    year_desc:    (a,b) => (b.year||0) - (a.year||0) || (a.title||'').localeCompare(b.title||''),
+    year_asc:     (a,b) => (a.year||0) - (b.year||0) || (a.title||'').localeCompare(b.title||''),
+    service_asc:  (a,b) => (a.service||'other').localeCompare(b.service||'other') || (a.title||'').localeCompare(b.title||''),
+    watched_asc:  (a,b) => (a.watched||'no').localeCompare(b.watched||'no') || (a.title||'').localeCompare(b.title||''),
+    tags_asc:     (a,b) => (a.tags||'').localeCompare(b.tags||'') || (a.title||'').localeCompare(b.title||''),
+    rating_desc:  (a,b) => (b.rating||0) - (a.rating||0) || (a.title||'').localeCompare(b.title||''),
+    rating_asc:   (a,b) => (a.rating||0) - (b.rating||0) || (a.title||'').localeCompare(b.title||''),
+  }[movieSortMode] || (() => 0);
+  return list.sort(cmp);
+}
+
+const MOVIE_UNGROUPED_SORTS = new Set(['added_desc', 'added_asc']);
+const SERVICE_LABELS = { netflix: 'Netflix', prime: 'Prime Video', disney: 'Disney+', max: 'Max', hulu: 'Hulu', appletv: 'Apple TV+', paramount: 'Paramount+', other: 'Other' };
+const WATCHED_LABELS = { no: 'Not watched', yes: 'Watched' };
+function movieGroupKey(m) {
+  switch (movieSortMode) {
+    case 'title_asc':                    return m.title || '';
+    case 'year_desc': case 'year_asc':   return m.year || 0;
+    case 'service_asc':                  return m.service || 'other';
+    case 'watched_asc':                  return m.watched || 'no';
+    case 'tags_asc':                     return m.tags || '';
+    case 'rating_desc': case 'rating_asc': return m.rating || 0;
+    default:                             return undefined;
+  }
+}
+function movieGroupLabel(key) {
+  switch (movieSortMode) {
+    case 'title_asc':   return key || '(untitled)';
+    case 'year_desc': case 'year_asc': return key ? String(key) : 'Unknown year';
+    case 'service_asc': return SERVICE_LABELS[key] || key;
+    case 'watched_asc': return WATCHED_LABELS[key] || key;
+    case 'tags_asc':     return key || 'No tags';
+    case 'rating_desc': case 'rating_asc':
+      return key ? (key % 1 ? key.toFixed(1) : key) + ' / 5' : 'Unrated';
+    default:             return '';
+  }
+}
+function groupMovies(list) {
+  const groups = [];
+  let curKey, curItems = null;
+  list.forEach(m => {
+    const key = movieGroupKey(m);
+    if (!curItems || key !== curKey) {
+      curKey = key;
+      curItems = [];
+      groups.push({ label: movieGroupLabel(key), items: curItems });
+    }
+    curItems.push(m);
+  });
+  return groups;
+}
+
+function movieCoverInnerHTML(m) {
+  const hasArt = !!m.posterUrl;
+  const sub = [SERVICE_LABELS[m.service] || 'Other', m.year].filter(Boolean).join(' · ');
+  return `
+      <div class="cover ${hasArt ? '' : 'art-fail'}" onclick="handleMovieCoverClick('${esc(m.id)}')" tabindex="0">
+        ${hasArt ? `<img src="${esc(m.posterUrl)}" alt="" loading="lazy" onerror="this.parentElement.classList.add('art-fail')">` : ''}
+        <div class="cover-fallback">${esc(initials(m.title))}</div>
+        <div class="cover-caption">
+          <strong>${esc(m.title)}</strong>
+          <span>${esc(sub)}</span>
+        </div>
+      </div>`;
+}
+function movieCardHTML(m) {
+  return `
+    <div class="record" data-id="${esc(m.id)}">
+      ${movieCoverInnerHTML(m)}
+    </div>`;
+}
+
+function renderMovieShelf() {
+  const list = filteredSortedMovies();
+  document.getElementById('movie-shelf-count').textContent =
+    `${movieDb.movies.length} movie${movieDb.movies.length === 1 ? '' : 's'}` +
+    (list.length !== movieDb.movies.length ? ` · ${list.length} shown` : '');
+
+  document.getElementById('movie-empty-state').classList.toggle('hidden', movieDb.movies.length !== 0);
+  document.getElementById('movie-no-results-state').classList.toggle('hidden', !(movieDb.movies.length && !list.length));
+
+  const gridEl = document.getElementById('movie-shelf-grid');
+  if (!movieDb.movies.length || !list.length) {
+    gridEl.className = 'shelf-grid';
+    gridEl.innerHTML = '';
+  } else if (MOVIE_UNGROUPED_SORTS.has(movieSortMode)) {
+    gridEl.className = 'shelf-grid';
+    gridEl.innerHTML = list.map(movieCardHTML).join('');
+  } else {
+    gridEl.className = 'shelf-groups';
+    gridEl.innerHTML = groupMovies(list).map(g => `
+      <section class="shelf-group">
+        <h3 class="shelf-group-label">${esc(g.label)}<span class="shelf-group-count">${g.items.length}</span></h3>
+        <div class="shelf-grid">${g.items.map(movieCardHTML).join('')}</div>
+      </section>`).join('');
+  }
+
+  renderMovieYearFilterOptions();
+  renderMovieTagFilterOptions();
+  renderMovieTagDatalist();
+}
+function renderMovieYearFilterOptions() {
+  const sel = document.getElementById('movie-year-filter'), cur = sel.value;
+  const years = new Set();
+  movieDb.movies.forEach(m => { if (m.year) years.add(String(m.year)); });
+  const sorted = [...years].sort((a,b) => b.localeCompare(a));
+  sel.innerHTML = '<option value="">All years</option>' + sorted.map(y => `<option value="${esc(y)}">${esc(y)}</option>`).join('');
+  if (sorted.includes(cur)) sel.value = cur;
+}
+function renderMovieTagFilterOptions() {
+  const sel = document.getElementById('movie-tag-filter'), cur = sel.value;
+  const tags = new Set();
+  movieDb.movies.forEach(m => (m.tags||'').split(',').forEach(t => { t = t.trim(); if (t) tags.add(t); }));
+  const sorted = [...tags].sort((a,b) => a.localeCompare(b));
+  sel.innerHTML = '<option value="">All tags</option>' + sorted.map(t => `<option value="${esc(t)}">${esc(t)}</option>`).join('');
+  if (sorted.includes(cur)) sel.value = cur;
+}
+function renderMovieTagDatalist() {
+  const tags = new Set();
+  movieDb.movies.forEach(m => (m.tags||'').split(',').forEach(t => { t = t.trim(); if (t) tags.add(t); }));
+  document.getElementById('movie-tag-list').innerHTML = [...tags].sort((a,b)=>a.localeCompare(b)).map(t => `<option value="${esc(t)}">`).join('');
+}
+function openMovie(id) {
+  const m = movieDb.movies.find(x => x.id === id);
+  if (m && m.streamingUrl) window.open(m.streamingUrl, '_blank', 'noopener');
+  else toast('No streaming link saved for this title');
+}
+function handleMovieCoverClick(id) {
+  if (document.body.classList.contains('edit-mode')) openEditMovieModal(id);
+  else openMovie(id);
+}
+
+// ─────────────────────────────────────────
 // ADD / EDIT RECORD MODAL
 // ─────────────────────────────────────────
 let editingId = null;
@@ -1038,14 +1437,181 @@ async function fetchFromLink() {
     document.getElementById('rf-link').value = raw;
   }
 }
+
+// ─────────────────────────────────────────
+// ADD / EDIT MOVIE MODAL
+// ─────────────────────────────────────────
+let editingMovieId = null;
+let mfImdbRating = null; // not user-editable — just carried from the last successful OMDb fetch through to save
+
+function updateMovieRatingPicker(v) {
+  const rating = (+v) / 2;
+  document.getElementById('mf-rating-label').textContent = rating > 0 ? (rating % 1 ? rating.toFixed(1) : rating) + ' / 5' : 'Unrated';
+}
+function updateMoviePosterPreview() {
+  const url = document.getElementById('mf-poster').value.trim();
+  const box = document.getElementById('movie-art-preview');
+  box.innerHTML = url ? `<img src="${esc(url)}" onerror="this.parentElement.innerHTML='🎬'">` : '🎬';
+}
+function updateImdbRatingHint() {
+  document.getElementById('mf-imdb-rating-hint').textContent = mfImdbRating ? `IMDb rating: ${mfImdbRating} / 10` : '';
+}
+function resetMovieForm() {
+  ['mf-title','mf-poster','mf-tags','mf-year','mf-streaming','mf-imdb'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('mf-service').value = 'netflix';
+  document.getElementById('mf-watched').value = 'no';
+  document.getElementById('mf-imdb-input').value = '';
+  document.getElementById('mf-imdb-status').textContent = '';
+  document.getElementById('mf-rating').value = 0;
+  updateMovieRatingPicker(0);
+  updateMoviePosterPreview();
+  mfImdbRating = null;
+  updateImdbRatingHint();
+}
+function openAddMovieModal() {
+  editingMovieId = null;
+  resetMovieForm();
+  document.getElementById('movie-modal-title').textContent = 'Add Movie';
+  document.getElementById('mf-delete-btn').style.display = 'none';
+  openModal('movie-modal');
+  document.getElementById('mf-imdb-input').focus();
+}
+function openEditMovieModal(id) {
+  const m = movieDb.movies.find(x => x.id === id);
+  if (!m) return;
+  editingMovieId = id;
+  resetMovieForm();
+  document.getElementById('mf-title').value = m.title || '';
+  document.getElementById('mf-poster').value = m.posterUrl || '';
+  document.getElementById('mf-tags').value = m.tags || '';
+  document.getElementById('mf-service').value = m.service || 'netflix';
+  document.getElementById('mf-watched').value = m.watched || 'no';
+  document.getElementById('mf-year').value = m.year || '';
+  document.getElementById('mf-streaming').value = m.streamingUrl || '';
+  document.getElementById('mf-imdb').value = m.imdbUrl || '';
+  document.getElementById('mf-rating').value = (m.rating || 0) * 2;
+  updateMovieRatingPicker((m.rating || 0) * 2);
+  updateMoviePosterPreview();
+  mfImdbRating = m.imdbRating || null;
+  updateImdbRatingHint();
+  document.getElementById('movie-modal-title').textContent = 'Edit Movie';
+  document.getElementById('mf-delete-btn').style.display = '';
+  openModal('movie-modal');
+}
+function saveMovieForm() {
+  const title = document.getElementById('mf-title').value.trim();
+  const poster = document.getElementById('mf-poster').value.trim();
+  const tags = document.getElementById('mf-tags').value.trim();
+  const service = document.getElementById('mf-service').value || 'other';
+  const watched = document.getElementById('mf-watched').value || 'no';
+  const yearRaw = document.getElementById('mf-year').value.trim();
+  const year = yearRaw ? +yearRaw : null;
+  const streamingUrl = document.getElementById('mf-streaming').value.trim();
+  const imdbUrl = document.getElementById('mf-imdb').value.trim();
+  const rating = (+document.getElementById('mf-rating').value) / 2;
+  if (!title || !streamingUrl) { toast('Title and Streaming Link are required'); return; }
+  if (editingMovieId) {
+    const m = movieDb.movies.find(x => x.id === editingMovieId);
+    if (m) Object.assign(m, { title, posterUrl: poster, tags, service, watched, year, streamingUrl, imdbUrl, imdbRating: mfImdbRating, rating });
+  } else {
+    movieDb.movies.unshift({ id: genId(), title, posterUrl: poster, tags, service, watched, year, streamingUrl, imdbUrl, imdbRating: mfImdbRating, rating, addedAt: todayISO() });
+  }
+  saveMovies(); renderMovieShelf(); closeModal('movie-modal');
+  toast(editingMovieId ? 'Movie updated' : 'Added to shelf');
+}
+function deleteMovie(id, fromModal) {
+  const m = movieDb.movies.find(x => x.id === id);
+  if (!m) return;
+  if (!confirm(`Remove "${m.title}" from the shelf?`)) return;
+  movieDb.movies = movieDb.movies.filter(x => x.id !== id);
+  saveMovies(); renderMovieShelf();
+  if (fromModal) closeModal('movie-modal');
+  toast('Removed from shelf');
+}
+
+// ─────────────────────────────────────────
+// IMDb / OMDb — IMDb itself has no public API; OMDb wraps its data behind a free,
+// key-gated, CORS-enabled JSON endpoint. A Netflix/streaming link carries no IMDb id, so
+// unlike Apple Music this can't resolve a single pasted link — the IMDb link is a separate
+// field used only to look up metadata, never stored as the "open" link (streamingUrl is).
+// ─────────────────────────────────────────
+function parseImdbUrl(raw) {
+  try {
+    const url = new URL(/^https?:\/\//i.test(raw) ? raw : 'https://' + raw);
+    if (!/(^|\.)imdb\.com$/.test(url.hostname)) return null;
+    const m = url.pathname.match(/\/title\/(tt\d+)/);
+    return m ? m[1] : null;
+  } catch { return null; }
+}
+function getOmdbKey() { return (localStorage.getItem(OMDB_KEY_STORAGE) || '').trim(); }
+async function fetchImdbMeta(rawUrl) {
+  const id = parseImdbUrl(rawUrl);
+  if (!id) return null;
+  const key = getOmdbKey();
+  if (!key) throw new Error('add an OMDb API key first (⋯ menu → OMDb API key…)');
+  const res = await fetch(`https://www.omdbapi.com/?apikey=${encodeURIComponent(key)}&i=${encodeURIComponent(id)}`);
+  if (!res.ok) throw new Error(`OMDb lookup ${res.status}`);
+  const data = await res.json();
+  if (data.Response === 'False') throw new Error(data.Error || 'not found');
+  const yearMatch = (data.Year || '').match(/\d{4}/);
+  return {
+    title: data.Title || '',
+    year: yearMatch ? yearMatch[0] : '',
+    poster: data.Poster && data.Poster !== 'N/A' ? data.Poster : '',
+    genre: data.Genre && data.Genre !== 'N/A' ? data.Genre : '',
+    imdbRating: data.imdbRating && data.imdbRating !== 'N/A' ? +data.imdbRating : null,
+    imdbUrl: `https://www.imdb.com/title/${id}/`,
+  };
+}
+async function fetchFromImdbLink() {
+  const raw = document.getElementById('mf-imdb-input').value.trim();
+  const status = document.getElementById('mf-imdb-status');
+  if (!raw) { toast('Paste an IMDb link first'); return; }
+  status.textContent = 'Fetching…';
+  try {
+    const meta = await fetchImdbMeta(raw);
+    if (!meta) {
+      status.textContent = "Couldn't recognize that as an IMDb link — fill in the details manually below.";
+      return;
+    }
+    document.getElementById('mf-title').value = meta.title;
+    document.getElementById('mf-year').value = meta.year;
+    document.getElementById('mf-poster').value = meta.poster;
+    document.getElementById('mf-imdb').value = meta.imdbUrl;
+    if (!document.getElementById('mf-tags').value.trim() && meta.genre) document.getElementById('mf-tags').value = meta.genre;
+    mfImdbRating = meta.imdbRating;
+    updateMoviePosterPreview();
+    updateImdbRatingHint();
+    status.textContent = `✓ Found "${meta.title}"` + (meta.year ? ` (${meta.year})` : '') + (meta.imdbRating ? ` — IMDb ${meta.imdbRating}/10` : '');
+  } catch (err) {
+    status.textContent = "Lookup failed (" + err.message + ") — fill in manually below.";
+  }
+}
+function openOmdbKeyModal() {
+  toggleMoreMenu();
+  document.getElementById('omdb-key-input').value = getOmdbKey();
+  openModal('omdb-modal');
+  document.getElementById('omdb-key-input').focus();
+}
+function saveOmdbKey() {
+  const key = document.getElementById('omdb-key-input').value.trim();
+  if (key) localStorage.setItem(OMDB_KEY_STORAGE, key); else localStorage.removeItem(OMDB_KEY_STORAGE);
+  closeModal('omdb-modal');
+  toast(key ? 'OMDb key saved' : 'OMDb key cleared');
+}
+
 // ─────────────────────────────────────────
 // EXPORT / IMPORT
 // ─────────────────────────────────────────
+// Export/import/GitHub push-pull below all act on shelfCtx() — whichever shelf (Music or
+// Movies) is currently the active tab — rather than being duplicated per shelf, since the
+// serialize/deserialize/API-call mechanics are identical regardless of record schema.
 function exportData() {
-  const blob = new Blob([JSON.stringify(db, null, 2)], { type: 'application/json' });
+  const ctx = shelfCtx();
+  const blob = new Blob([JSON.stringify(ctx.getDb(), null, 2)], { type: 'application/json' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = SEED_FILE;
+  a.download = ctx.seedFile;
   a.click();
   URL.revokeObjectURL(a.href);
   toggleMoreMenu();
@@ -1054,13 +1620,17 @@ function triggerImport() { toggleMoreMenu(); document.getElementById('import-fil
 function handleImportFile(e) {
   const file = e.target.files[0];
   if (!file) return;
+  const ctx = shelfCtx();
   const reader = new FileReader();
   reader.onload = () => {
     try {
       const d = JSON.parse(reader.result);
-      if (!Array.isArray(d.records)) throw new Error('Missing "records" array');
-      db = d; save(); renderShelf();
-      toast('Imported ' + d.records.length + ' record' + (d.records.length === 1 ? '' : 's'));
+      if (!Array.isArray(d[ctx.arrayKey])) throw new Error(`Missing "${ctx.arrayKey}" array`);
+      ctx.setDb(d);
+      localStorage.setItem(ctx.storageKey, JSON.stringify(d));
+      ctx.render();
+      const n = d[ctx.arrayKey].length;
+      toast('Imported ' + n + ' ' + (n === 1 ? ctx.itemLabel : ctx.itemLabelPlural));
     } catch (err) { toast('Import failed: ' + err.message, 4000); }
     e.target.value = '';
   };
@@ -1068,77 +1638,92 @@ function handleImportFile(e) {
 }
 
 // ─────────────────────────────────────────
-// GITHUB PUSH / PULL
+// GITHUB PUSH / PULL — also shelfCtx()-driven; see note above.
 // ─────────────────────────────────────────
+async function githubPutFile(cfg, jsonText) {
+  const bytes = new TextEncoder().encode(jsonText);
+  let binary = ''; bytes.forEach(b => binary += String.fromCharCode(b));
+  const content = btoa(binary);
+  const apiUrl = `https://api.github.com/repos/${cfg.owner}/${cfg.repo}/contents/${cfg.path}`;
+  const headers = { 'Authorization': `token ${cfg.token}`, 'Content-Type': 'application/json', 'Accept': 'application/vnd.github.v3+json' };
+  let sha;
+  const getRes = await fetch(`${apiUrl}?ref=${encodeURIComponent(cfg.branch)}`, { headers });
+  if (getRes.ok) sha = (await getRes.json()).sha;
+  else if (getRes.status !== 404) { const err = await getRes.json().catch(()=>({})); throw new Error(err.message || `GET ${getRes.status}`); }
+  const body = { message: `Update ${cfg.path} via vShelf app`, content, branch: cfg.branch };
+  if (sha) body.sha = sha;
+  const putRes = await fetch(apiUrl, { method: 'PUT', headers, body: JSON.stringify(body) });
+  if (!putRes.ok) { const err = await putRes.json().catch(()=>({})); throw new Error(err.message || `PUT ${putRes.status}`); }
+}
+async function githubGetFile(cfg) {
+  const apiUrl = `https://api.github.com/repos/${cfg.owner}/${cfg.repo}/contents/${cfg.path}`;
+  const headers = { 'Authorization': `token ${cfg.token}`, 'Accept': 'application/vnd.github.v3+json' };
+  const res = await fetch(`${apiUrl}?ref=${encodeURIComponent(cfg.branch)}&_=${Date.now()}`, { headers });
+  if (!res.ok) { const err = await res.json().catch(()=>({})); throw new Error(err.message || `GET ${res.status}`); }
+  const file = await res.json();
+  return decodeURIComponent(escape(atob(file.content.replace(/\n/g, ''))));
+}
 function getGithubConfig() {
-  try { return JSON.parse(localStorage.getItem(GH_CFG_KEY) || 'null'); } catch { return null; }
+  try { return JSON.parse(localStorage.getItem(shelfCtx().ghCfgKey) || 'null'); } catch { return null; }
 }
 function clearGithubConfig() {
-  localStorage.removeItem(GH_CFG_KEY);
+  const ctx = shelfCtx();
+  localStorage.removeItem(ctx.ghCfgKey);
   const auto = autoDetectGithub();
   document.getElementById('gh-token').value  = '';
   document.getElementById('gh-owner').value  = auto.owner;
   document.getElementById('gh-repo').value   = auto.repo;
   document.getElementById('gh-branch').value = 'main';
-  document.getElementById('gh-path').value   = SEED_FILE;
+  document.getElementById('gh-path').value   = ctx.seedFile;
   toast('GitHub settings cleared');
 }
 function autoDetectGithub() {
+  const ctx = shelfCtx();
   const host = location.hostname, path = location.pathname;
   const m = host.match(/^([^.]+)\.github\.io$/);
   if (m) {
     const rm = path.match(/^\/([^/]+)/);
-    return { owner: m[1], repo: rm ? rm[1] : '', branch: 'main', path: SEED_FILE, token: '' };
+    return { owner: m[1], repo: rm ? rm[1] : '', branch: 'main', path: ctx.seedFile, token: '' };
   }
-  return { owner: '', repo: '', branch: 'main', path: SEED_FILE, token: '' };
+  return { owner: '', repo: '', branch: 'main', path: ctx.seedFile, token: '' };
 }
 let ghConfigIntent = 'push';
 function openGithubConfigModal(intent) {
   toggleMoreMenu();
   ghConfigIntent = intent || 'push';
+  const ctx = shelfCtx();
   const cfg = getGithubConfig() || autoDetectGithub();
   document.getElementById('gh-token').value  = cfg.token  || '';
   document.getElementById('gh-owner').value  = cfg.owner  || '';
   document.getElementById('gh-repo').value   = cfg.repo   || '';
   document.getElementById('gh-branch').value = cfg.branch || 'main';
-  document.getElementById('gh-path').value   = cfg.path   || SEED_FILE;
-  document.getElementById('github-modal-title').textContent = ghConfigIntent === 'pull' ? 'Pull from GitHub' : 'Push to GitHub';
+  document.getElementById('gh-path').value   = cfg.path   || ctx.seedFile;
+  document.getElementById('github-modal-title').textContent = (ghConfigIntent === 'pull' ? 'Pull from GitHub' : 'Push to GitHub') + ctx.label;
   document.getElementById('gh-save-btn').textContent = ghConfigIntent === 'pull' ? 'Save & Pull' : 'Save & Push';
   openModal('github-modal');
   document.getElementById('gh-token').focus();
 }
 function saveGithubConfig() {
+  const ctx = shelfCtx();
   const cfg = {
     token:  document.getElementById('gh-token').value.trim(),
     owner:  document.getElementById('gh-owner').value.trim(),
     repo:   document.getElementById('gh-repo').value.trim(),
     branch: document.getElementById('gh-branch').value.trim() || 'main',
-    path:   document.getElementById('gh-path').value.trim()   || SEED_FILE,
+    path:   document.getElementById('gh-path').value.trim()   || ctx.seedFile,
   };
   if (!cfg.token || !cfg.owner || !cfg.repo) { toast('Token, Owner and Repo are required'); return; }
-  localStorage.setItem(GH_CFG_KEY, JSON.stringify(cfg));
+  localStorage.setItem(ctx.ghCfgKey, JSON.stringify(cfg));
   closeModal('github-modal');
   if (ghConfigIntent === 'pull') doPull(cfg); else doPush(cfg);
 }
 async function pushToGithub() { openGithubConfigModal('push'); }
 async function doPush(cfg) {
+  const ctx = shelfCtx();
   const btn = document.getElementById('btn-push');
   btn.disabled = true; btn.textContent = '↑…';
   try {
-    const json = JSON.stringify(db, null, 2);
-    const bytes = new TextEncoder().encode(json);
-    let binary = ''; bytes.forEach(b => binary += String.fromCharCode(b));
-    const content = btoa(binary);
-    const apiUrl = `https://api.github.com/repos/${cfg.owner}/${cfg.repo}/contents/${cfg.path}`;
-    const headers = { 'Authorization': `token ${cfg.token}`, 'Content-Type': 'application/json', 'Accept': 'application/vnd.github.v3+json' };
-    let sha;
-    const getRes = await fetch(`${apiUrl}?ref=${encodeURIComponent(cfg.branch)}`, { headers });
-    if (getRes.ok) sha = (await getRes.json()).sha;
-    else if (getRes.status !== 404) { const err = await getRes.json().catch(()=>({})); throw new Error(err.message || `GET ${getRes.status}`); }
-    const body = { message: `Update ${cfg.path} via vShelf app`, content, branch: cfg.branch };
-    if (sha) body.sha = sha;
-    const putRes = await fetch(apiUrl, { method: 'PUT', headers, body: JSON.stringify(body) });
-    if (!putRes.ok) { const err = await putRes.json().catch(()=>({})); throw new Error(err.message || `PUT ${putRes.status}`); }
+    await githubPutFile(cfg, JSON.stringify(ctx.getDb(), null, 2));
     toast('Pushed to GitHub!');
     document.getElementById('sync-banner').classList.add('hidden');
   } catch (err) {
@@ -1153,18 +1738,16 @@ async function pullFromGithub() {
   doPull(cfg);
 }
 async function doPull(cfg) {
+  const ctx = shelfCtx();
   const btn = document.getElementById('btn-pull');
   btn.disabled = true; btn.textContent = '⬇…';
   try {
-    const apiUrl = `https://api.github.com/repos/${cfg.owner}/${cfg.repo}/contents/${cfg.path}`;
-    const headers = { 'Authorization': `token ${cfg.token}`, 'Accept': 'application/vnd.github.v3+json' };
-    const res = await fetch(`${apiUrl}?ref=${encodeURIComponent(cfg.branch)}&_=${Date.now()}`, { headers });
-    if (!res.ok) { const err = await res.json().catch(()=>({})); throw new Error(err.message || `GET ${res.status}`); }
-    const file = await res.json();
-    const json = decodeURIComponent(escape(atob(file.content.replace(/\n/g, ''))));
+    const json = await githubGetFile(cfg);
     const d = JSON.parse(json);
-    if (!Array.isArray(d.records)) throw new Error('Invalid data — missing "records" array');
-    db = d; save(); renderShelf();
+    if (!Array.isArray(d[ctx.arrayKey])) throw new Error(`Invalid data — missing "${ctx.arrayKey}" array`);
+    ctx.setDb(d);
+    localStorage.setItem(ctx.storageKey, JSON.stringify(d));
+    ctx.render();
     toast('Pulled from GitHub!');
     document.getElementById('sync-banner').classList.add('hidden');
   } catch (err) {
