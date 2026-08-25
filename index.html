@@ -152,6 +152,16 @@ main{padding-bottom:60px;}
   background-size:100% calc(var(--cover) + var(--gap));
   background-position:0 calc(22px - var(--gap)*0.42);
 }
+/* Grouped shelf mode (any sort except recently/oldest added): #shelf-grid switches from a
+   single .shelf-grid to a stack of .shelf-group sections, each its own independent
+   .shelf-grid — reused as-is, unmodified, so the wood-ledge background math above (which
+   assumes a 22px top padding) stays correct per group instead of only for row 1 overall. */
+.shelf-group-label{
+  display:flex; align-items:baseline; gap:9px;
+  margin:0; padding:24px 22px 4px; font-size:17px; color:var(--ink);
+}
+.shelf-group:first-child .shelf-group-label{padding-top:22px;}
+.shelf-group-count{font-family:'Inter',system-ui,sans-serif; font-weight:500; font-size:12px; color:var(--muted-dim);}
 .record{position:relative;}
 .vinyl-peek{
   position:absolute; top:9%; right:-9%; width:88%; aspect-ratio:1/1;
@@ -250,20 +260,11 @@ body.edit-mode .record:hover .cover-actions, body.edit-mode .record:focus-within
 .divider-label{font-size:11px; text-transform:uppercase; letter-spacing:.6px; color:var(--muted-dim); margin:18px 0 10px; font-weight:600;}
 
 
-/* Star rating — a single ★★★★★ run painted with a two-stop gradient (gold up to the rating
-   %, dim after) and clipped to the glyphs via background-clip:text, so half-star fills are
-   a true partial-character fill, not a glyph. Two earlier approaches — a layered fill span
-   sized via a CSS custom property, then the same span with its width set inline instead —
-   both rendered every rating as a full 5 stars on iOS/iPadOS home-screen (WKWebView) Safari:
-   first because the custom property feeding the width didn't reliably resolve there, then
-   because the fill span's `inset:0` left a `right:0` fighting the inline `width`, and
-   WKWebView honored `right` over `width` instead of dropping it per spec. background-clip
-   avoids that whole family of bug by not using absolute positioning or width-clipping at
-   all — the gradient itself is set inline per element (never through a custom property). */
-.star-rating{display:inline-block; letter-spacing:2px; line-height:1; background-clip:text; -webkit-background-clip:text; color:transparent;}
-.star-rating.sm{font-size:11px; letter-spacing:1px;}
+/* Rating — no star glyphs anywhere (dropped after repeated iOS/iPadOS home-screen Safari
+   rendering bugs). rating is still a 0–5, half-step number under the hood, still settable
+   via the slider below and still usable for filtering/sorting — grouped shelves (see
+   .shelf-group below) are how a rating value is surfaced on the shelf itself now. */
 .rating-picker{display:flex; align-items:center; gap:12px; flex-wrap:wrap;}
-.rating-picker .star-rating{font-size:23px; letter-spacing:4px;}
 .rating-picker input[type=range]{flex:1; min-width:120px; accent-color:#e8b64a;}
 #rf-rating-label{font-size:12.5px; color:var(--muted); min-width:52px;}
 
@@ -290,6 +291,8 @@ body.edit-mode .record:hover .cover-actions, body.edit-mode .record:focus-within
   .brand h1{font-size:18px;}
   .toolbar{padding:12px 14px 2px;}
   .shelf-grid{padding:16px 14px calc(var(--gap) + var(--shelf-h) + 4px);}
+  .shelf-group-label{padding:20px 14px 4px;}
+  .shelf-group:first-child .shelf-group-label{padding-top:16px;}
   .hdr-search{max-width:none; order:5; flex-basis:100%;}
 }
 </style>
@@ -355,11 +358,11 @@ body.edit-mode .record:hover .cover-actions, body.edit-mode .record:focus-within
   <select id="tag-filter" onchange="setTagFilter(this.value)"><option value="">All tags</option></select>
   <select id="rating-filter" onchange="setRatingFilter(this.value)">
     <option value="">All ratings</option>
-    <option value="5">★★★★★ only</option>
-    <option value="4">★★★★+</option>
-    <option value="3">★★★+</option>
-    <option value="2">★★+</option>
-    <option value="1">★+</option>
+    <option value="5">5 only</option>
+    <option value="4">4+</option>
+    <option value="3">3+</option>
+    <option value="2">2+</option>
+    <option value="1">1+</option>
     <option value="0">Unrated</option>
   </select>
   <select id="sort-select" onchange="setSortMode(this.value)">
@@ -444,7 +447,6 @@ body.edit-mode .record:hover .cover-actions, body.edit-mode .record:focus-within
     <div class="field">
       <label>Rating</label>
       <div class="rating-picker">
-        <span class="star-rating" id="rf-rating-stars" style="background:linear-gradient(90deg,#e8b64a 0%,rgba(255,255,255,.16) 0%)">★★★★★</span>
         <input type="range" id="rf-rating" min="0" max="10" step="1" value="0" oninput="updateRatingPicker(this.value)">
         <span id="rf-rating-label">Unrated</span>
       </div>
@@ -753,6 +755,54 @@ function filteredSortedRecords() {
   return list.sort(cmp);
 }
 
+// Grouped shelves: every sort mode groups records into separate shelves by whatever field
+// it's primarily sorting on, except the two "added" sorts (chronological order across the
+// whole collection doesn't have a natural bucket). The list from filteredSortedRecords() is
+// already sorted primarily by that same field, so consecutive equal keys are guaranteed to
+// be contiguous — grouping is just a chunk-by-consecutive-key pass, not a re-sort/re-bucket.
+const UNGROUPED_SORTS = new Set(['added_desc', 'added_asc']);
+const TYPE_LABELS = { album: 'Album', single: 'Single', compilation: 'Compilation' };
+const OWNED_LABELS = { no: 'Not owned', vinyl: 'Vinyl', cd: 'CD', other: 'Other' };
+function groupKey(r) {
+  switch (sortMode) {
+    case 'title_asc':                return r.title || '';
+    case 'artist_asc':                return r.artist || '';
+    case 'year_desc': case 'year_asc': return r.year || 0;
+    case 'type_asc':                  return r.type || 'album';
+    case 'owned_asc':                 return r.owned || 'no';
+    case 'tags_asc':                  return r.tags || '';
+    case 'rating_desc': case 'rating_asc': return r.rating || 0;
+    default:                          return undefined;
+  }
+}
+function groupLabel(key) {
+  switch (sortMode) {
+    case 'title_asc':   return key || '(untitled)';
+    case 'artist_asc':  return key || 'No artist';
+    case 'year_desc': case 'year_asc': return key ? String(key) : 'Unknown year';
+    case 'type_asc':    return TYPE_LABELS[key] || key;
+    case 'owned_asc':   return OWNED_LABELS[key] || key;
+    case 'tags_asc':    return key || 'No tags';
+    case 'rating_desc': case 'rating_asc':
+      return key ? (key % 1 ? key.toFixed(1) : key) + ' / 5' : 'Unrated';
+    default:             return '';
+  }
+}
+function groupRecords(list) {
+  const groups = [];
+  let curKey, curItems = null;
+  list.forEach(r => {
+    const key = groupKey(r);
+    if (!curItems || key !== curKey) {
+      curKey = key;
+      curItems = [];
+      groups.push({ label: groupLabel(key), items: curItems });
+    }
+    curItems.push(r);
+  });
+  return groups;
+}
+
 function coverInnerHTML(r) {
   const hasArt = !!r.artworkUrl;
   return `
@@ -766,7 +816,6 @@ function coverInnerHTML(r) {
         <div class="cover-caption">
           <strong>${esc(r.title)}</strong>
           <span>${esc(r.artist || '')}${r.year ? ' · ' + esc(String(r.year)) : ''}</span>
-          ${r.rating ? `<span class="star-rating sm" title="${r.rating} / 5" style="background:linear-gradient(90deg,#e8b64a ${r.rating / 5 * 100}%,rgba(255,255,255,.16) ${r.rating / 5 * 100}%)">★★★★★</span>` : ''}
         </div>
       </div>`;
 }
@@ -788,7 +837,20 @@ function renderShelf() {
   document.getElementById('no-results-state').classList.toggle('hidden', !(db.records.length && !list.length));
 
   const gridEl = document.getElementById('shelf-grid');
-  gridEl.innerHTML = (db.records.length && list.length) ? list.map(recordCardHTML).join('') : '';
+  if (!db.records.length || !list.length) {
+    gridEl.className = 'shelf-grid';
+    gridEl.innerHTML = '';
+  } else if (UNGROUPED_SORTS.has(sortMode)) {
+    gridEl.className = 'shelf-grid';
+    gridEl.innerHTML = list.map(recordCardHTML).join('');
+  } else {
+    gridEl.className = 'shelf-groups';
+    gridEl.innerHTML = groupRecords(list).map(g => `
+      <section class="shelf-group">
+        <h3 class="shelf-group-label">${esc(g.label)}<span class="shelf-group-count">${g.items.length}</span></h3>
+        <div class="shelf-grid">${g.items.map(recordCardHTML).join('')}</div>
+      </section>`).join('');
+  }
 
   renderArtistFilterOptions();
   renderYearFilterOptions();
@@ -838,8 +900,6 @@ let editingId = null;
 // Half-star rating: the range input carries half-star units (0-10); rating = value/2.
 function updateRatingPicker(v) {
   const rating = (+v) / 2;
-  const pct = rating / 5 * 100;
-  document.getElementById('rf-rating-stars').style.background = `linear-gradient(90deg,#e8b64a ${pct}%,rgba(255,255,255,.16) ${pct}%)`;
   document.getElementById('rf-rating-label').textContent = rating > 0 ? (rating % 1 ? rating.toFixed(1) : rating) + ' / 5' : 'Unrated';
 }
 function resetRecordForm() {
