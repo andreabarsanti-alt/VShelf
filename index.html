@@ -140,7 +140,7 @@ button.icon-btn.danger:hover{background:var(--danger); border-color:var(--danger
 
 /* ── Shelf ───────────────────────────── */
 main{padding-bottom:60px;}
-#music-panel.hidden, #movie-panel.hidden{display:none;}
+#music-panel.hidden, #movie-panel.hidden, #book-panel.hidden{display:none;}
 .shelf-grid{
   display:grid;
   grid-template-columns:repeat(auto-fill,minmax(var(--cover),1fr));
@@ -554,7 +554,7 @@ main{padding-bottom:60px;}
     <div id="book-empty-state" class="state-msg hidden">
       <div class="big">📚</div>
       <h2>Your book shelf is empty</h2>
-      <p>Paste a Google Books link or type an ISBN to fetch details — books have no "open" link, click any cover to edit it.</p>
+      <p>Paste an Open Library link or type an ISBN to fetch details — books have no "open" link, click any cover to edit it.</p>
       <button type="button" class="btn primary" onclick="openAddBookModal()">＋ Add Book</button>
     </div>
     <div id="book-no-results-state" class="state-msg hidden">
@@ -735,13 +735,13 @@ main{padding-bottom:60px;}
     <h3><span id="book-modal-title">Add Book</span><button type="button" class="modal-close" onclick="closeModal('book-modal')">✕</button></h3>
 
     <div class="field">
-      <label>Google Books Link or ISBN</label>
+      <label>Open Library Link or ISBN</label>
       <div class="inline-row">
-        <input type="text" id="bk-link-input" placeholder="https://books.google.com/books?id=… or an ISBN">
+        <input type="text" id="bk-link-input" placeholder="https://openlibrary.org/works/OL… or an ISBN">
         <button type="button" class="btn" onclick="fetchFromBookLink()">Fetch</button>
       </div>
       <div id="bk-link-status"></div>
-      <p class="hint">Paste a Google Books link or type an ISBN — title, author, cover and year fill in automatically. Books have no "open" link — clicking a cover always opens this edit form.</p>
+      <p class="hint">Paste an Open Library link (a work or edition page) or type an ISBN — title, author, cover and year fill in automatically. Books have no "open" link — clicking a cover always opens this edit form.</p>
     </div>
 
     <div class="divider-label">Book details</div>
@@ -813,7 +813,7 @@ main{padding-bottom:60px;}
   <div class="modal-box">
     <h3><span>OMDb API key</span><button type="button" class="modal-close" onclick="closeModal('omdb-modal')">✕</button></h3>
     <div class="field"><label>API key</label><input type="text" id="omdb-key-input" placeholder="e.g. a1b2c3d4"></div>
-    <p class="hint">IMDb itself has no public API — the Movies shelf fetches its metadata (title, year, poster, rating) through OMDb, which wraps IMDb's data. Get a free key at <a href="https://www.omdbapi.com/apikey.aspx" target="_blank" rel="noopener">omdbapi.com/apikey.aspx</a> (1,000 lookups/day). Stored only in this browser.</p>
+    <p class="hint">IMDb itself has no public API — the Movies shelf fetches its metadata (title, year, poster, rating) through OMDb, which wraps IMDb's data. Get a free key at <a href="https://www.omdbapi.com/apikey.aspx" target="_blank" rel="noopener">omdbapi.com/apikey.aspx</a> (1,000 lookups/day) — <strong>check your email and click the activation link</strong>, a freshly requested key returns "Invalid API key!" until activated. Stored only in this browser.</p>
     <div class="modal-footer">
       <span class="spacer"></span>
       <button type="button" class="btn ghost" onclick="closeModal('omdb-modal')">Cancel</button>
@@ -886,7 +886,7 @@ const OMDB_KEY_STORAGE  = 'vshelf_omdb_key'; // global, not per-profile — a pe
 const SHELF_TAB_KEY     = 'vshelf_active_shelf'; // global UI preference — which tab was open last
 
 // Books shelf — same per-profile namespacing pattern again, own storage key / seed file /
-// GitHub target. No API key needed: Google Books' basic volume/ISBN lookups are keyless.
+// GitHub target. No API key needed: Open Library's lookups are keyless, unlike OMDb's.
 const BOOK_STORAGE_KEY = 'vshelf_books_v1_' + PROFILE;
 const BOOK_SEED_FILE   = 'vshelf_books_' + PROFILE + '.json';
 const BOOK_GH_CFG_KEY  = 'vshelf_github_config_books_' + PROFILE;
@@ -2033,9 +2033,11 @@ async function fetchImdbMeta(rawUrl) {
   const key = getOmdbKey();
   if (!key) throw new Error('add an OMDb API key first (⋯ menu → OMDb API key…)');
   const res = await fetch(`https://www.omdbapi.com/?apikey=${encodeURIComponent(key)}&i=${encodeURIComponent(id)}`);
-  if (!res.ok) throw new Error(`OMDb lookup ${res.status}`);
-  const data = await res.json();
-  if (data.Response === 'False') throw new Error(data.Error || 'not found');
+  // OMDb returns its actual reason ("Invalid API key!", "Request limit reached!", etc.) as
+  // JSON even on a non-2xx status (e.g. 401) — read the body before falling back to a bare
+  // status code, so a bad/unactivated/rate-limited key surfaces a message that actually says so.
+  const data = await res.json().catch(() => { throw new Error(`OMDb lookup ${res.status}`); });
+  if (data.Response === 'False') throw new Error(data.Error || `OMDb lookup ${res.status}`);
   const yearMatch = (data.Year || '').match(/\d{4}/);
   return {
     title: data.Title || '',
@@ -2185,61 +2187,89 @@ function deleteBook(id, fromModal) {
 }
 
 // ─────────────────────────────────────────
-// GOOGLE BOOKS — books have no "open" link (no IMDb-style deep link into a reading app), so
-// the link/ISBN field here is purely for lookup, same role imdbUrl plays for Movies. The
-// Google Books volumes API is free and CORS-enabled; the per-volume/ISBN lookups used here
-// don't need a key (unlike OMDb).
+// OPEN LIBRARY — books have no "open" link (no IMDb-style deep link into a reading app), so
+// the link/ISBN field here is purely for lookup, same role imdbUrl plays for Movies. Open
+// Library (openlibrary.org, run by the Internet Archive) is free, CORS-enabled, and never
+// needs a key, unlike OMDb. An ISBN or an edition-level link (/books/OL...M) resolves in one
+// call via the api/books "data" endpoint (authors already resolved to names); a work-level
+// link (/works/OL...W — what most people actually copy off an Open Library title page) takes
+// a second fetch to resolve the author's name from their separate /authors/OL...A record.
+// Open Library's data doesn't reliably carry a language code the way Google Books' did, so
+// unlike Movies/Music-style auto-fill, Language here stays manual — meta.language is always [].
 // ─────────────────────────────────────────
-function parseGoogleBooksInput(raw) {
+function parseOpenLibraryInput(raw) {
   const trimmed = raw.trim();
   const isbn = trimmed.replace(/[-\s]/g, '');
   if (/^(97[89])?\d{9}(\d|X)$/i.test(isbn)) return { isbn };
   try {
     const url = new URL(/^https?:\/\//i.test(trimmed) ? trimmed : 'https://' + trimmed);
-    if (!/(^|\.)(books\.google\.[a-z.]+|google\.[a-z.]+)$/.test(url.hostname)) return null;
-    const idParam = url.searchParams.get('id');
-    if (idParam) return { volumeId: idParam };
-    const m = url.pathname.match(/\/books\/edition\/[^/]+\/([^/?]+)/);
-    if (m) return { volumeId: m[1] };
+    if (!/(^|\.)openlibrary\.org$/.test(url.hostname)) return null;
+    let m = url.pathname.match(/\/works\/(OL\d+W)/);
+    if (m) return { workId: m[1] };
+    m = url.pathname.match(/\/books\/(OL\d+M)/);
+    if (m) return { editionId: m[1] };
   } catch {}
   return null;
 }
-function upsizeGoogleCover(url) {
-  if (!url) return '';
-  return url.replace(/^http:/, 'https:').replace(/&edge=curl/, '').replace(/zoom=\d/, 'zoom=2');
+function subjectNames(subjects) {
+  // Editions (jscmd=data) give subjects as [{name,url}]; works give plain strings — handle
+  // both, and cap the count since a work's subject list can run to dozens of entries.
+  return (subjects || []).slice(0, 5).map(s => typeof s === 'string' ? s : (s && s.name) || '').filter(Boolean);
 }
-async function fetchGoogleBooksMeta(rawUrl) {
-  const parsed = parseGoogleBooksInput(rawUrl);
+async function fetchOpenLibraryMeta(rawUrl) {
+  const parsed = parseOpenLibraryInput(rawUrl);
   if (!parsed) return null;
-  const query = parsed.volumeId
-    ? `https://www.googleapis.com/books/v1/volumes/${encodeURIComponent(parsed.volumeId)}`
-    : `https://www.googleapis.com/books/v1/volumes?q=isbn:${encodeURIComponent(parsed.isbn)}`;
-  const res = await fetch(query);
-  if (!res.ok) throw new Error(`Google Books lookup ${res.status}`);
-  const data = await res.json();
-  const item = parsed.volumeId ? data : (data.items && data.items[0]);
-  if (!item || !item.volumeInfo) return null;
-  const info = item.volumeInfo;
-  const langMap = { en: 'english', it: 'italian' };
+  if (parsed.isbn || parsed.editionId) {
+    const bibkey = parsed.isbn ? `ISBN:${parsed.isbn}` : `OLID:${parsed.editionId}`;
+    const res = await fetch(`https://openlibrary.org/api/books?bibkeys=${encodeURIComponent(bibkey)}&format=json&jscmd=data`);
+    if (!res.ok) throw new Error(`Open Library lookup ${res.status}`);
+    const data = await res.json();
+    const entry = data[bibkey];
+    if (!entry) return null;
+    const yearMatch = (entry.publish_date || '').match(/\d{4}/);
+    return {
+      title: entry.title || '',
+      author: (entry.authors || []).map(a => a.name).join(', '),
+      year: yearMatch ? yearMatch[0] : '',
+      cover: (entry.cover && (entry.cover.large || entry.cover.medium || entry.cover.small)) || '',
+      categories: subjectNames(entry.subjects).join(', '),
+      language: [],
+      sourceUrl: entry.url || rawUrl,
+    };
+  }
+  // Work-level link: the work record has no resolved author name or a publish date, just a
+  // key pointing at an /authors/OL...A record — a second fetch away.
+  const workRes = await fetch(`https://openlibrary.org/works/${parsed.workId}.json`);
+  if (!workRes.ok) throw new Error(`Open Library lookup ${workRes.status}`);
+  const work = await workRes.json();
+  let author = '';
+  const authorKey = work.authors && work.authors[0] && work.authors[0].author && work.authors[0].author.key;
+  if (authorKey) {
+    try {
+      const authorRes = await fetch(`https://openlibrary.org${authorKey}.json`);
+      if (authorRes.ok) author = (await authorRes.json()).name || '';
+    } catch {}
+  }
+  const yearMatch = (work.first_publish_date || '').match(/\d{4}/);
   return {
-    title: info.title || '',
-    author: (info.authors || []).join(', '),
-    year: info.publishedDate ? info.publishedDate.slice(0, 4) : '',
-    cover: upsizeGoogleCover((info.imageLinks && (info.imageLinks.thumbnail || info.imageLinks.smallThumbnail)) || ''),
-    categories: (info.categories || []).join(', '),
-    language: langMap[info.language] ? [langMap[info.language]] : [],
-    sourceUrl: info.infoLink || info.canonicalVolumeLink || rawUrl,
+    title: work.title || '',
+    author,
+    year: yearMatch ? yearMatch[0] : '',
+    cover: (work.covers && work.covers[0] > 0) ? `https://covers.openlibrary.org/b/id/${work.covers[0]}-L.jpg` : '',
+    categories: subjectNames(work.subjects).join(', '),
+    language: [],
+    sourceUrl: `https://openlibrary.org${work.key || '/works/' + parsed.workId}`,
   };
 }
 async function fetchFromBookLink() {
   const raw = document.getElementById('bk-link-input').value.trim();
   const status = document.getElementById('bk-link-status');
-  if (!raw) { toast('Paste a Google Books link or ISBN first'); return; }
+  if (!raw) { toast('Paste an Open Library link or ISBN first'); return; }
   status.textContent = 'Fetching…';
   try {
-    const meta = await fetchGoogleBooksMeta(raw);
+    const meta = await fetchOpenLibraryMeta(raw);
     if (!meta) {
-      status.textContent = "Couldn't recognize that as a Google Books link or ISBN — fill in the details manually below.";
+      status.textContent = "Couldn't recognize that as an Open Library link or ISBN — fill in the details manually below.";
       return;
     }
     document.getElementById('bk-title').value = meta.title;
