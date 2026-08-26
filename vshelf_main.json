@@ -1,6 +1,32 @@
 {
   "records": [
     {
+      "id": "vmta0zoc261xc",
+      "title": "Wish You Were Here",
+      "artist": "Pink Floyd",
+      "appleMusicUrl": "https://music.apple.com/us/album/wish-you-were-here/1065973975?uo=4",
+      "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/aa/e0/ab/aae0ab6a-d906-a189-81bf-70b56aa43f7a/886445635843.jpg/1200x1200bb.jpg",
+      "tags": "",
+      "type": "album",
+      "owned": "vinyl",
+      "year": 1975,
+      "rating": 0,
+      "addedAt": "2026-08-26"
+    },
+    {
+      "id": "vmta0z2uu971k",
+      "title": "Darkness on the Edge of Town",
+      "artist": "Bruce Springsteen",
+      "appleMusicUrl": "https://music.apple.com/us/album/darkness-on-the-edge-of-town/400713977?uo=4",
+      "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/b3/13/4e/b3134ed3-a05d-d3b2-8f96-8cddd067aa32/884977798753.jpg/1200x1200bb.jpg",
+      "tags": "",
+      "type": "album",
+      "owned": "vinyl",
+      "year": 1978,
+      "rating": 0,
+      "addedAt": "2026-08-26"
+    },
+    {
       "id": "vmt9wamkwdfuy",
       "title": "Rust Never Sleeps",
       "artist": "Neil Young & Crazy Horse",
