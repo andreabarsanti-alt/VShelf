@@ -10,7 +10,7 @@
       "type": "album",
       "owned": "vinyl",
       "year": 1975,
-      "rating": 0,
+      "rating": 3.5,
       "addedAt": "2026-08-26"
     },
     {
@@ -23,7 +23,7 @@
       "type": "album",
       "owned": "vinyl",
       "year": 1978,
-      "rating": 0,
+      "rating": 4.5,
       "addedAt": "2026-08-26"
     },
     {
