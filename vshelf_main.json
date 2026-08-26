@@ -1,6 +1,19 @@
 {
   "records": [
     {
+      "id": "vmt9wamkwdfuy",
+      "title": "Rust Never Sleeps",
+      "artist": "Neil Young & Crazy Horse",
+      "appleMusicUrl": "https://music.apple.com/us/album/rust-never-sleeps/1015767135?uo=4",
+      "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music1/v4/9a/65/18/9a6518c2-850f-f40a-5bad-540a9ef4ad70/093624924708.jpg/1200x1200bb.jpg",
+      "tags": "",
+      "type": "album",
+      "owned": "vinyl",
+      "year": 1979,
+      "rating": 3.5,
+      "addedAt": "2026-08-26"
+    },
+    {
       "id": "vmt9suc8860aw",
       "title": "Highway 61 Revisited",
       "artist": "Bob Dylan",
