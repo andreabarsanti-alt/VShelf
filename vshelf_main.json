@@ -1,6 +1,19 @@
 {
   "records": [
     {
+      "id": "vmt9suc8860aw",
+      "title": "Highway 61 Revisited",
+      "artist": "Bob Dylan",
+      "appleMusicUrl": "https://music.apple.com/us/album/highway-61-revisited/201281514?uo=4",
+      "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/f8/ff/c0/f8ffc056-55b4-2033-657d-32492d1eea25/827969239926.jpg/1200x1200bb.jpg",
+      "tags": "",
+      "type": "album",
+      "owned": "cd",
+      "year": 1965,
+      "rating": 5,
+      "addedAt": "2026-08-26"
+    },
+    {
       "id": "vmt9rdta4up20",
       "title": "Wildflowers",
       "artist": "Tom Petty",
@@ -49,7 +62,7 @@
       "type": "album",
       "owned": "no",
       "year": 1972,
-      "rating": 0,
+      "rating": 2,
       "addedAt": "2026-08-24"
     },
     {
