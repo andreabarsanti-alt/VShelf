@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 <title>vShelf</title>
-<meta name="description" content="A virtual vinyl shelf — collect Apple Music albums and songs as records on a shelf.">
+<meta name="description" content="A virtual shelf — collect Apple Music albums, streaming movies and shows, and books, each on its own shelf.">
 <meta name="theme-color" content="#14100c">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%92%BF%3C/text%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -206,6 +206,10 @@ main{padding-bottom:60px;}
 .edit-toggle{display:flex; align-items:center; gap:6px; font-size:13px; color:var(--muted); cursor:pointer; user-select:none; white-space:nowrap;}
 .edit-toggle input{accent-color:var(--accent); cursor:pointer; width:14px; height:14px;}
 
+.checkbox-row{display:flex; align-items:center; gap:7px; font-size:13.5px; color:var(--ink); cursor:pointer; user-select:none; white-space:nowrap;}
+.checkbox-row input{accent-color:var(--accent); cursor:pointer; width:14px; height:14px;}
+.checkbox-group{display:flex; gap:16px; flex-wrap:wrap; padding-top:2px;}
+
 .state-msg{
   display:flex; flex-direction:column; align-items:center; gap:12px; text-align:center;
   padding:70px 20px; color:var(--muted);
@@ -307,14 +311,15 @@ main{padding-bottom:60px;}
   </div>
   <div class="shelf-tabs" role="tablist">
     <button type="button" class="shelf-tab active" data-shelf="music" onclick="switchShelf('music')">🎵 Music</button>
-    <button type="button" class="shelf-tab" data-shelf="movies" onclick="switchShelf('movies')" disabled title="Coming later — the Movies shelf is still an experiment">🎬 Movies</button>
+    <button type="button" class="shelf-tab" data-shelf="movies" onclick="switchShelf('movies')">🎬 Movies</button>
+    <button type="button" class="shelf-tab" data-shelf="books" onclick="switchShelf('books')">📚 Books</button>
   </div>
   <select id="profile-select" onchange="switchProfile(this.value)"></select>
   <div class="hdr-search">
     <input type="search" id="search-input" placeholder="Search title, artist, tag…" oninput="setSearchCurrent(this.value)">
   </div>
   <div class="hdr-actions">
-    <label class="edit-toggle" title="Click a cover to edit/remove it instead of opening its link">
+    <label class="edit-toggle" title="Click a cover to edit/remove it instead of opening its link (Books always opens edit — there's no link to open)">
       <input type="checkbox" id="edit-mode-toggle" onchange="setEditMode(this.checked)">
       <span>Edit mode</span>
     </label>
@@ -406,6 +411,11 @@ main{padding-bottom:60px;}
 <div id="movie-panel" class="hidden">
   <div class="toolbar">
     <span id="movie-shelf-count">0 movies</span>
+    <select id="movie-format-filter" onchange="setMovieFormatFilter(this.value)">
+      <option value="">All formats</option>
+      <option value="movie">Movie</option>
+      <option value="series">Series</option>
+    </select>
     <select id="movie-service-filter" onchange="setMovieServiceFilter(this.value)">
       <option value="">All services</option>
       <option value="netflix">Netflix</option>
@@ -417,11 +427,25 @@ main{padding-bottom:60px;}
       <option value="paramount">Paramount+</option>
       <option value="other">Other</option>
     </select>
+    <select id="movie-owned-filter" onchange="setMovieOwnedFilter(this.value)">
+      <option value="">Any</option>
+      <option value="owned">All owned</option>
+      <option value="no">Not owned</option>
+      <option value="dvd">DVD</option>
+      <option value="bluray">Blu-ray</option>
+      <option value="other">Other</option>
+    </select>
     <select id="movie-watched-filter" onchange="setMovieWatchedFilter(this.value)">
       <option value="">Any</option>
       <option value="yes">Watched</option>
       <option value="no">Not watched</option>
     </select>
+    <select id="movie-rewatched-filter" onchange="setMovieRewatchedFilter(this.value)">
+      <option value="">Any</option>
+      <option value="yes">Re-watched</option>
+      <option value="no">Not re-watched</option>
+    </select>
+    <select id="movie-director-filter" onchange="setMovieDirectorFilter(this.value)"><option value="">All directors</option></select>
     <select id="movie-year-filter" onchange="setMovieYearFilter(this.value)"><option value="">All years</option></select>
     <select id="movie-tag-filter" onchange="setMovieTagFilter(this.value)"><option value="">All tags</option></select>
     <select id="movie-rating-filter" onchange="setMovieRatingFilter(this.value)">
@@ -436,11 +460,17 @@ main{padding-bottom:60px;}
     <select id="movie-sort-select" onchange="setMovieSortMode(this.value)">
       <option value="added_desc">Recently added</option>
       <option value="added_asc">Oldest added</option>
+      <option value="last_viewed_desc">Last viewed: newest</option>
+      <option value="last_viewed_asc">Last viewed: oldest</option>
       <option value="title_asc">Title A–Z</option>
+      <option value="director_asc">Director A–Z</option>
       <option value="year_desc">Year: newest</option>
       <option value="year_asc">Year: oldest</option>
+      <option value="format_asc">Format A–Z</option>
       <option value="service_asc">Service A–Z</option>
+      <option value="owned_asc">Owned A–Z</option>
       <option value="watched_asc">Watched A–Z</option>
+      <option value="rewatched_asc">Re-watched A–Z</option>
       <option value="tags_asc">Tags A–Z</option>
       <option value="rating_desc">Highest rated</option>
       <option value="rating_asc">Lowest rated</option>
@@ -456,6 +486,78 @@ main{padding-bottom:60px;}
       <button type="button" class="btn primary" onclick="openAddMovieModal()">＋ Add Movie</button>
     </div>
     <div id="movie-no-results-state" class="state-msg hidden">
+      <div class="big">🔍</div>
+      <h2>No matches</h2>
+      <p>Nothing on the shelf matches that search or filter.</p>
+    </div>
+  </main>
+</div>
+
+<div id="book-panel" class="hidden">
+  <div class="toolbar">
+    <span id="book-shelf-count">0 books</span>
+    <select id="book-format-filter" onchange="setBookFormatFilter(this.value)">
+      <option value="">All formats</option>
+      <option value="novel">Novel</option>
+      <option value="nonfiction">Non-fiction</option>
+      <option value="shortstories">Short stories</option>
+    </select>
+    <select id="book-owned-filter" onchange="setBookOwnedFilter(this.value)">
+      <option value="">Any</option>
+      <option value="owned">All owned</option>
+      <option value="no">Not owned</option>
+      <option value="physical">Physical</option>
+      <option value="digital">Digital</option>
+    </select>
+    <select id="book-reread-filter" onchange="setBookRereadFilter(this.value)">
+      <option value="">Any</option>
+      <option value="yes">Re-read</option>
+      <option value="no">Not re-read</option>
+    </select>
+    <select id="book-author-filter" onchange="setBookAuthorFilter(this.value)"><option value="">All authors</option></select>
+    <select id="book-language-filter" onchange="setBookLanguageFilter(this.value)">
+      <option value="">All languages</option>
+      <option value="english">English</option>
+      <option value="italian">Italian</option>
+    </select>
+    <select id="book-year-filter" onchange="setBookYearFilter(this.value)"><option value="">All years</option></select>
+    <select id="book-tag-filter" onchange="setBookTagFilter(this.value)"><option value="">All tags</option></select>
+    <select id="book-rating-filter" onchange="setBookRatingFilter(this.value)">
+      <option value="">All ratings</option>
+      <option value="5">5 only</option>
+      <option value="4">4+</option>
+      <option value="3">3+</option>
+      <option value="2">2+</option>
+      <option value="1">1+</option>
+      <option value="0">Unrated</option>
+    </select>
+    <select id="book-sort-select" onchange="setBookSortMode(this.value)">
+      <option value="added_desc">Recently added</option>
+      <option value="added_asc">Oldest added</option>
+      <option value="last_read_desc">Last read: newest</option>
+      <option value="last_read_asc">Last read: oldest</option>
+      <option value="title_asc">Title A–Z</option>
+      <option value="author_asc">Author A–Z</option>
+      <option value="year_desc">Year: newest</option>
+      <option value="year_asc">Year: oldest</option>
+      <option value="format_asc">Format A–Z</option>
+      <option value="owned_asc">Owned A–Z</option>
+      <option value="language_asc">Language A–Z</option>
+      <option value="tags_asc">Tags A–Z</option>
+      <option value="rating_desc">Highest rated</option>
+      <option value="rating_asc">Lowest rated</option>
+    </select>
+  </div>
+
+  <main>
+    <div id="book-shelf-grid" class="shelf-grid"></div>
+    <div id="book-empty-state" class="state-msg hidden">
+      <div class="big">📚</div>
+      <h2>Your book shelf is empty</h2>
+      <p>Paste a Google Books link or type an ISBN to fetch details — books have no "open" link, click any cover to edit it.</p>
+      <button type="button" class="btn primary" onclick="openAddBookModal()">＋ Add Book</button>
+    </div>
+    <div id="book-no-results-state" class="state-msg hidden">
       <div class="big">🔍</div>
       <h2>No matches</h2>
       <p>Nothing on the shelf matches that search or filter.</p>
@@ -562,6 +664,12 @@ main{padding-bottom:60px;}
       <div class="field" style="flex:2"><label>Title *</label><input type="text" id="mf-title" placeholder="Movie or show title"></div>
       <div class="field" style="flex:1"><label>Year</label><input type="number" id="mf-year" placeholder="2015" min="1900" max="2099" step="1"></div>
     </div>
+    <div class="field-row">
+      <div class="field" style="flex:2"><label>Director</label><input type="text" id="mf-director" placeholder="Director name"></div>
+      <div class="field" style="flex:1"><label>Format</label>
+        <select id="mf-format"><option value="movie">Movie</option><option value="series">Series</option></select>
+      </div>
+    </div>
     <div class="field">
       <label>Streaming Link *</label>
       <input type="url" id="mf-streaming" placeholder="https://www.netflix.com/title/…">
@@ -580,9 +688,22 @@ main{padding-bottom:60px;}
           <option value="other">Other</option>
         </select>
       </div>
+      <div class="field" style="flex:1"><label>Owned</label>
+        <select id="mf-owned"><option value="no">No</option><option value="dvd">DVD</option><option value="bluray">Blu-ray</option><option value="other">Other</option></select>
+      </div>
+    </div>
+    <div class="field-row">
       <div class="field" style="flex:1"><label>Watched</label>
         <select id="mf-watched"><option value="no">No</option><option value="yes">Yes</option></select>
       </div>
+      <div class="field" style="flex:1"><label>Last Viewed</label><input type="date" id="mf-last-viewed"></div>
+    </div>
+    <div class="field">
+      <label class="checkbox-row"><input type="checkbox" id="mf-rewatched"><span>🔁 Re-watched</span></label>
+    </div>
+    <div class="field">
+      <label>Actors</label>
+      <input type="text" id="mf-actors" placeholder="Filled automatically from IMDb, or type your own">
     </div>
     <div class="field">
       <label>Tags</label>
@@ -603,6 +724,85 @@ main{padding-bottom:60px;}
       <span class="spacer"></span>
       <button type="button" class="btn ghost" onclick="closeModal('movie-modal')">Cancel</button>
       <button type="button" class="btn primary" onclick="saveMovieForm()">Save to shelf</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add / Edit book modal -->
+<div class="modal" id="book-modal">
+  <div class="backdrop" onclick="closeModal('book-modal')"></div>
+  <div class="modal-box wide">
+    <h3><span id="book-modal-title">Add Book</span><button type="button" class="modal-close" onclick="closeModal('book-modal')">✕</button></h3>
+
+    <div class="field">
+      <label>Google Books Link or ISBN</label>
+      <div class="inline-row">
+        <input type="text" id="bk-link-input" placeholder="https://books.google.com/books?id=… or an ISBN">
+        <button type="button" class="btn" onclick="fetchFromBookLink()">Fetch</button>
+      </div>
+      <div id="bk-link-status"></div>
+      <p class="hint">Paste a Google Books link or type an ISBN — title, author, cover and year fill in automatically. Books have no "open" link — clicking a cover always opens this edit form.</p>
+    </div>
+
+    <div class="divider-label">Book details</div>
+
+    <div class="art-preview-row">
+      <div class="art-preview" id="book-art-preview">📖</div>
+      <div class="art-preview-fields">
+        <div class="field">
+          <label>Cover URL</label>
+          <input type="text" id="bk-cover" placeholder="Filled automatically, or paste your own" oninput="updateBookCoverPreview()">
+        </div>
+      </div>
+    </div>
+
+    <div class="field-row">
+      <div class="field" style="flex:2"><label>Title *</label><input type="text" id="bk-title" placeholder="Book title"></div>
+      <div class="field" style="flex:1"><label>Year</label><input type="number" id="bk-year" placeholder="2015" min="1000" max="2099" step="1"></div>
+    </div>
+    <div class="field-row">
+      <div class="field" style="flex:2"><label>Author</label><input type="text" id="bk-author" placeholder="Author name"></div>
+      <div class="field" style="flex:1"><label>Format</label>
+        <select id="bk-format"><option value="novel">Novel</option><option value="nonfiction">Non-fiction</option><option value="shortstories">Short stories</option></select>
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field" style="flex:1"><label>Owned</label>
+        <select id="bk-owned"><option value="no">No</option><option value="physical">Physical</option><option value="digital">Digital</option></select>
+      </div>
+      <div class="field" style="flex:1">
+        <label>Language</label>
+        <div class="checkbox-group">
+          <label class="checkbox-row"><input type="checkbox" class="bk-lang" value="english"><span>English</span></label>
+          <label class="checkbox-row"><input type="checkbox" class="bk-lang" value="italian"><span>Italian</span></label>
+        </div>
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field" style="flex:1"><label>Last Read</label><input type="date" id="bk-last-read"></div>
+      <div class="field" style="flex:1; display:flex; align-items:flex-end; padding-bottom:9px;">
+        <label class="checkbox-row"><input type="checkbox" id="bk-reread"><span>🔁 Re-read</span></label>
+      </div>
+    </div>
+    <div class="field">
+      <label>Tags</label>
+      <input type="text" id="bk-tags" list="book-tag-list" placeholder="fiction, favorite, book club…">
+      <datalist id="book-tag-list"></datalist>
+    </div>
+    <div class="field">
+      <label>Rating</label>
+      <div class="rating-picker">
+        <input type="range" id="bk-rating" min="0" max="10" step="1" value="0" oninput="updateBookRatingPicker(this.value)">
+        <span id="bk-rating-label">Unrated</span>
+      </div>
+    </div>
+    <input type="hidden" id="bk-source">
+
+    <div class="modal-footer">
+      <button type="button" class="btn danger" id="bk-delete-btn" style="display:none;background:transparent;border-color:var(--danger);color:var(--danger);" onclick="deleteBook(editingBookId, true)">🗑 Remove</button>
+      <span class="spacer"></span>
+      <button type="button" class="btn ghost" onclick="closeModal('book-modal')">Cancel</button>
+      <button type="button" class="btn primary" onclick="saveBookForm()">Save to shelf</button>
     </div>
   </div>
 </div>
@@ -685,6 +885,12 @@ const MOVIE_GH_CFG_KEY  = 'vshelf_github_config_movies_' + PROFILE;
 const OMDB_KEY_STORAGE  = 'vshelf_omdb_key'; // global, not per-profile — a personal API credential, like EDIT_MODE_KEY
 const SHELF_TAB_KEY     = 'vshelf_active_shelf'; // global UI preference — which tab was open last
 
+// Books shelf — same per-profile namespacing pattern again, own storage key / seed file /
+// GitHub target. No API key needed: Google Books' basic volume/ISBN lookups are keyless.
+const BOOK_STORAGE_KEY = 'vshelf_books_v1_' + PROFILE;
+const BOOK_SEED_FILE   = 'vshelf_books_' + PROFILE + '.json';
+const BOOK_GH_CFG_KEY  = 'vshelf_github_config_books_' + PROFILE;
+
 const PROFILES_KEY = 'vshelf_profiles';
 const DEFAULT_PROFILES = [{ id: 'main', name: 'Main Shelf' }];
 
@@ -744,6 +950,8 @@ function deleteProfile(id) {
   localStorage.removeItem('vshelf_github_config_' + id);
   localStorage.removeItem('vshelf_movies_v1_' + id);
   localStorage.removeItem('vshelf_github_config_movies_' + id);
+  localStorage.removeItem('vshelf_books_v1_' + id);
+  localStorage.removeItem('vshelf_github_config_books_' + id);
   renderProfilesList(); renderProfileSelect();
   if (id === PROFILE) switchProfile(getProfiles()[0].id);
 }
@@ -778,12 +986,14 @@ let db = { records: [] };
 function save() { localStorage.setItem(STORAGE_KEY, JSON.stringify(db)); }
 let movieDb = { movies: [] };
 function saveMovies() { localStorage.setItem(MOVIE_STORAGE_KEY, JSON.stringify(movieDb)); }
+let bookDb = { books: [] };
+function saveBooks() { localStorage.setItem(BOOK_STORAGE_KEY, JSON.stringify(bookDb)); }
 
 // ─────────────────────────────────────────
-// SHELF SWITCHING (Music ↔ Movies) — the two shelves have different record schemas so
-// filtering/sorting/rendering/the add-edit modal stay separate per kind, but the generic
-// plumbing (GitHub push/pull, export/import, force-refresh) is written once and driven by
-// whichever of these two context objects shelfCtx() currently points at.
+// SHELF SWITCHING (Music ↔ Movies ↔ Books) — the three shelves have different record
+// schemas so filtering/sorting/rendering/the add-edit modal stay separate per kind, but the
+// generic plumbing (GitHub push/pull, export/import, force-refresh) is written once and
+// driven by whichever of these three context objects shelfCtx() currently points at.
 // ─────────────────────────────────────────
 let currentShelf = 'music';
 const MUSIC_CTX = {
@@ -796,27 +1006,39 @@ const MOVIE_CTX = {
   storageKey: MOVIE_STORAGE_KEY, seedFile: MOVIE_SEED_FILE, ghCfgKey: MOVIE_GH_CFG_KEY, arrayKey: 'movies',
   getDb: () => movieDb, setDb: (d) => { movieDb = d; }, render: () => renderMovieShelf(),
 };
-function shelfCtx() { return currentShelf === 'movies' ? MOVIE_CTX : MUSIC_CTX; }
+const BOOK_CTX = {
+  kind: 'books', label: ' (Books)', itemLabel: 'book', itemLabelPlural: 'books',
+  storageKey: BOOK_STORAGE_KEY, seedFile: BOOK_SEED_FILE, ghCfgKey: BOOK_GH_CFG_KEY, arrayKey: 'books',
+  getDb: () => bookDb, setDb: (d) => { bookDb = d; }, render: () => renderBookShelf(),
+};
+function shelfCtx() { return currentShelf === 'movies' ? MOVIE_CTX : currentShelf === 'books' ? BOOK_CTX : MUSIC_CTX; }
 function switchShelf(kind) {
-  // The Movies tab button is disabled (still experimental) — guard here too, not just in
-  // the DOM, so a stale localStorage[SHELF_TAB_KEY] from before it was disabled (or any
-  // future caller) can't land the app on a shelf its own tab says is unreachable.
-  const moviesTab = document.querySelector('.shelf-tab[data-shelf="movies"]');
-  if (kind === 'movies' && moviesTab && moviesTab.disabled) kind = 'music';
-  currentShelf = kind === 'movies' ? 'movies' : 'music';
+  currentShelf = (kind === 'movies' || kind === 'books') ? kind : 'music';
   localStorage.setItem(SHELF_TAB_KEY, currentShelf);
   document.querySelectorAll('.shelf-tab').forEach(t => t.classList.toggle('active', t.dataset.shelf === currentShelf));
   document.getElementById('music-panel').classList.toggle('hidden', currentShelf !== 'music');
   document.getElementById('movie-panel').classList.toggle('hidden', currentShelf !== 'movies');
-  document.getElementById('btn-add').textContent = currentShelf === 'movies' ? '＋ Add Movie' : '＋ Add Record';
-  document.getElementById('search-input').placeholder = currentShelf === 'movies' ? 'Search title, tag…' : 'Search title, artist, tag…';
+  document.getElementById('book-panel').classList.toggle('hidden', currentShelf !== 'books');
+  document.getElementById('btn-add').textContent =
+    currentShelf === 'movies' ? '＋ Add Movie' : currentShelf === 'books' ? '＋ Add Book' : '＋ Add Record';
+  document.getElementById('search-input').placeholder =
+    currentShelf === 'movies' ? 'Search title, director, tag…' : currentShelf === 'books' ? 'Search title, author, tag…' : 'Search title, artist, tag…';
   // The search box is shared chrome, but each shelf keeps its own query state — resync
   // its displayed value on switch so it never shows text that isn't what's actually
   // filtering the shelf now visible.
-  document.getElementById('search-input').value = currentShelf === 'movies' ? movieSearchQuery : searchQuery;
+  document.getElementById('search-input').value =
+    currentShelf === 'movies' ? movieSearchQuery : currentShelf === 'books' ? bookSearchQuery : searchQuery;
 }
-function addCurrent() { currentShelf === 'movies' ? openAddMovieModal() : openAddModal(); }
-function setSearchCurrent(v) { currentShelf === 'movies' ? setMovieSearch(v) : setSearch(v); }
+function addCurrent() {
+  if (currentShelf === 'movies') openAddMovieModal();
+  else if (currentShelf === 'books') openAddBookModal();
+  else openAddModal();
+}
+function setSearchCurrent(v) {
+  if (currentShelf === 'movies') setMovieSearch(v);
+  else if (currentShelf === 'books') setBookSearch(v);
+  else setSearch(v);
+}
 
 async function boot() {
   if (new URLSearchParams(location.search).has('_hr')) {
@@ -854,10 +1076,25 @@ async function boot() {
       }
     } catch {}
   }
+  const savedBooks = localStorage.getItem(BOOK_STORAGE_KEY);
+  if (savedBooks) {
+    try { bookDb = JSON.parse(savedBooks); if (!Array.isArray(bookDb.books)) bookDb.books = []; }
+    catch { bookDb = { books: [] }; }
+  } else {
+    try {
+      const r = await fetch(BOOK_SEED_FILE);
+      if (r.ok) {
+        const d = await r.json();
+        if (Array.isArray(d.books)) { bookDb = d; saveBooks(); }
+      }
+    } catch {}
+  }
   renderProfileSelect();
   renderShelf();
   renderMovieShelf();
-  switchShelf(localStorage.getItem(SHELF_TAB_KEY) === 'movies' ? 'movies' : 'music');
+  renderBookShelf();
+  const savedTab = localStorage.getItem(SHELF_TAB_KEY);
+  switchShelf(savedTab === 'movies' || savedTab === 'books' ? savedTab : 'music');
 }
 
 function dbFingerprint(d) {
@@ -1133,6 +1370,7 @@ function handleCoverClick(id) {
 // see shelfCtx() above.
 // ─────────────────────────────────────────
 let movieSearchQuery = '', movieSortMode = 'added_desc', movieTagFilter = '', movieServiceFilter = '', movieWatchedFilter = '', movieYearFilter = '', movieRatingFilter = '';
+let movieFormatFilter = '', movieOwnedFilter = '', movieDirectorFilter = '', movieRewatchedFilter = '';
 function setMovieSearch(v) { movieSearchQuery = v; renderMovieShelf(); }
 function setMovieSortMode(v) { movieSortMode = v; renderMovieShelf(); }
 function setMovieTagFilter(v) { movieTagFilter = v; renderMovieShelf(); }
@@ -1140,12 +1378,16 @@ function setMovieServiceFilter(v) { movieServiceFilter = v; renderMovieShelf(); 
 function setMovieWatchedFilter(v) { movieWatchedFilter = v; renderMovieShelf(); }
 function setMovieYearFilter(v) { movieYearFilter = v; renderMovieShelf(); }
 function setMovieRatingFilter(v) { movieRatingFilter = v; renderMovieShelf(); }
+function setMovieFormatFilter(v) { movieFormatFilter = v; renderMovieShelf(); }
+function setMovieOwnedFilter(v) { movieOwnedFilter = v; renderMovieShelf(); }
+function setMovieDirectorFilter(v) { movieDirectorFilter = v; renderMovieShelf(); }
+function setMovieRewatchedFilter(v) { movieRewatchedFilter = v; renderMovieShelf(); }
 
 function filteredSortedMovies() {
   let list = movieDb.movies.slice();
   if (movieSearchQuery.trim()) {
     const q = movieSearchQuery.trim().toLowerCase();
-    list = list.filter(m => (m.title||'').toLowerCase().includes(q) || (m.tags||'').toLowerCase().includes(q));
+    list = list.filter(m => (m.title||'').toLowerCase().includes(q) || (m.tags||'').toLowerCase().includes(q) || (m.director||'').toLowerCase().includes(q) || (m.actors||'').toLowerCase().includes(q));
   }
   if (movieTagFilter) {
     const tf = movieTagFilter.toLowerCase();
@@ -1154,18 +1396,29 @@ function filteredSortedMovies() {
   if (movieServiceFilter) list = list.filter(m => (m.service || 'other') === movieServiceFilter);
   if (movieWatchedFilter) list = list.filter(m => (m.watched || 'no') === movieWatchedFilter);
   if (movieYearFilter) list = list.filter(m => String(m.year || '') === movieYearFilter);
+  if (movieFormatFilter) list = list.filter(m => (m.format || 'movie') === movieFormatFilter);
+  if (movieOwnedFilter === 'owned') list = list.filter(m => (m.owned || 'no') !== 'no');
+  else if (movieOwnedFilter) list = list.filter(m => (m.owned || 'no') === movieOwnedFilter);
+  if (movieDirectorFilter) list = list.filter(m => (m.director || '') === movieDirectorFilter);
+  if (movieRewatchedFilter) list = list.filter(m => (m.rewatched ? 'yes' : 'no') === movieRewatchedFilter);
   if (movieRatingFilter !== '') {
     const rf = +movieRatingFilter;
     list = list.filter(m => rf === 0 ? !m.rating : (m.rating || 0) >= rf);
   }
   const cmp = {
-    added_desc:   (a,b) => (b.addedAt||'').localeCompare(a.addedAt||''),
-    added_asc:    (a,b) => (a.addedAt||'').localeCompare(b.addedAt||''),
+    added_desc:       (a,b) => (b.addedAt||'').localeCompare(a.addedAt||''),
+    added_asc:        (a,b) => (a.addedAt||'').localeCompare(b.addedAt||''),
+    last_viewed_desc: (a,b) => (b.lastViewedAt||'').localeCompare(a.lastViewedAt||''),
+    last_viewed_asc:  (a,b) => (a.lastViewedAt||'').localeCompare(b.lastViewedAt||''),
     title_asc:    (a,b) => (a.title||'').localeCompare(b.title||''),
+    director_asc: (a,b) => (a.director||'').localeCompare(b.director||'') || (a.title||'').localeCompare(b.title||''),
     year_desc:    (a,b) => (b.year||0) - (a.year||0) || (a.title||'').localeCompare(b.title||''),
     year_asc:     (a,b) => (a.year||0) - (b.year||0) || (a.title||'').localeCompare(b.title||''),
+    format_asc:   (a,b) => (a.format||'movie').localeCompare(b.format||'movie') || (a.title||'').localeCompare(b.title||''),
     service_asc:  (a,b) => (a.service||'other').localeCompare(b.service||'other') || (a.title||'').localeCompare(b.title||''),
+    owned_asc:    (a,b) => (a.owned||'no').localeCompare(b.owned||'no') || (a.title||'').localeCompare(b.title||''),
     watched_asc:  (a,b) => (a.watched||'no').localeCompare(b.watched||'no') || (a.title||'').localeCompare(b.title||''),
+    rewatched_asc:(a,b) => (a.rewatched?'1':'0').localeCompare(b.rewatched?'1':'0') || (a.title||'').localeCompare(b.title||''),
     tags_asc:     (a,b) => (a.tags||'').localeCompare(b.tags||'') || (a.title||'').localeCompare(b.title||''),
     rating_desc:  (a,b) => (b.rating||0) - (a.rating||0) || (a.title||'').localeCompare(b.title||''),
     rating_asc:   (a,b) => (a.rating||0) - (b.rating||0) || (a.title||'').localeCompare(b.title||''),
@@ -1173,15 +1426,22 @@ function filteredSortedMovies() {
   return list.sort(cmp);
 }
 
-const MOVIE_UNGROUPED_SORTS = new Set(['added_desc', 'added_asc']);
+const MOVIE_UNGROUPED_SORTS = new Set(['added_desc', 'added_asc', 'last_viewed_desc', 'last_viewed_asc']);
 const SERVICE_LABELS = { netflix: 'Netflix', prime: 'Prime Video', disney: 'Disney+', max: 'Max', hulu: 'Hulu', appletv: 'Apple TV+', paramount: 'Paramount+', other: 'Other' };
 const WATCHED_LABELS = { no: 'Not watched', yes: 'Watched' };
+const MOVIE_FORMAT_LABELS = { movie: 'Movie', series: 'Series' };
+const MOVIE_OWNED_LABELS = { no: 'Not owned', dvd: 'DVD', bluray: 'Blu-ray', other: 'Other' };
+const REWATCHED_LABELS = { no: 'Not re-watched', yes: 'Re-watched' };
 function movieGroupKey(m) {
   switch (movieSortMode) {
     case 'title_asc':                    return m.title || '';
+    case 'director_asc':                 return m.director || '';
     case 'year_desc': case 'year_asc':   return m.year || 0;
+    case 'format_asc':                   return m.format || 'movie';
     case 'service_asc':                  return m.service || 'other';
+    case 'owned_asc':                    return m.owned || 'no';
     case 'watched_asc':                  return m.watched || 'no';
+    case 'rewatched_asc':                return m.rewatched ? 'yes' : 'no';
     case 'tags_asc':                     return m.tags || '';
     case 'rating_desc': case 'rating_asc': return m.rating || 0;
     default:                             return undefined;
@@ -1190,9 +1450,13 @@ function movieGroupKey(m) {
 function movieGroupLabel(key) {
   switch (movieSortMode) {
     case 'title_asc':   return key || '(untitled)';
+    case 'director_asc': return key || 'No director';
     case 'year_desc': case 'year_asc': return key ? String(key) : 'Unknown year';
+    case 'format_asc':  return MOVIE_FORMAT_LABELS[key] || key;
     case 'service_asc': return SERVICE_LABELS[key] || key;
+    case 'owned_asc':   return MOVIE_OWNED_LABELS[key] || key;
     case 'watched_asc': return WATCHED_LABELS[key] || key;
+    case 'rewatched_asc': return REWATCHED_LABELS[key] || key;
     case 'tags_asc':     return key || 'No tags';
     case 'rating_desc': case 'rating_asc':
       return key ? (key % 1 ? key.toFixed(1) : key) + ' / 5' : 'Unrated';
@@ -1216,7 +1480,7 @@ function groupMovies(list) {
 
 function movieCoverInnerHTML(m) {
   const hasArt = !!m.posterUrl;
-  const sub = [SERVICE_LABELS[m.service] || 'Other', m.year].filter(Boolean).join(' · ');
+  const sub = [m.director, m.year].filter(Boolean).join(' · ');
   return `
       <div class="cover ${hasArt ? '' : 'art-fail'}" onclick="handleMovieCoverClick('${esc(m.id)}')" tabindex="0">
         ${hasArt ? `<img src="${esc(m.posterUrl)}" alt="" loading="lazy" onerror="this.parentElement.classList.add('art-fail')">` : ''}
@@ -1259,9 +1523,18 @@ function renderMovieShelf() {
       </section>`).join('');
   }
 
+  renderMovieDirectorFilterOptions();
   renderMovieYearFilterOptions();
   renderMovieTagFilterOptions();
   renderMovieTagDatalist();
+}
+function renderMovieDirectorFilterOptions() {
+  const sel = document.getElementById('movie-director-filter'), cur = sel.value;
+  const directors = new Set();
+  movieDb.movies.forEach(m => { if (m.director && m.director.trim()) directors.add(m.director.trim()); });
+  const sorted = [...directors].sort((a,b) => a.localeCompare(b));
+  sel.innerHTML = '<option value="">All directors</option>' + sorted.map(d => `<option value="${esc(d)}">${esc(d)}</option>`).join('');
+  if (sorted.includes(cur)) sel.value = cur;
 }
 function renderMovieYearFilterOptions() {
   const sel = document.getElementById('movie-year-filter'), cur = sel.value;
@@ -1293,6 +1566,194 @@ function handleMovieCoverClick(id) {
   if (document.body.classList.contains('edit-mode')) openEditMovieModal(id);
   else openMovie(id);
 }
+
+// ─────────────────────────────────────────
+// BOOK SHELF RENDERING / FILTERS — mirrors the music/movie shelf sections above field-for-
+// field, against bookDb.books and the book-specific schema (author instead of artist,
+// language as a multi-value field, no "open" link at all — see handleBookCoverClick()).
+// ─────────────────────────────────────────
+let bookSearchQuery = '', bookSortMode = 'added_desc', bookTagFilter = '', bookFormatFilter = '', bookOwnedFilter = '', bookAuthorFilter = '', bookYearFilter = '', bookLanguageFilter = '', bookRatingFilter = '', bookRereadFilter = '';
+function setBookSearch(v) { bookSearchQuery = v; renderBookShelf(); }
+function setBookSortMode(v) { bookSortMode = v; renderBookShelf(); }
+function setBookTagFilter(v) { bookTagFilter = v; renderBookShelf(); }
+function setBookFormatFilter(v) { bookFormatFilter = v; renderBookShelf(); }
+function setBookOwnedFilter(v) { bookOwnedFilter = v; renderBookShelf(); }
+function setBookAuthorFilter(v) { bookAuthorFilter = v; renderBookShelf(); }
+function setBookYearFilter(v) { bookYearFilter = v; renderBookShelf(); }
+function setBookLanguageFilter(v) { bookLanguageFilter = v; renderBookShelf(); }
+function setBookRatingFilter(v) { bookRatingFilter = v; renderBookShelf(); }
+function setBookRereadFilter(v) { bookRereadFilter = v; renderBookShelf(); }
+
+function filteredSortedBooks() {
+  let list = bookDb.books.slice();
+  if (bookSearchQuery.trim()) {
+    const q = bookSearchQuery.trim().toLowerCase();
+    list = list.filter(b => (b.title||'').toLowerCase().includes(q) || (b.author||'').toLowerCase().includes(q) || (b.tags||'').toLowerCase().includes(q));
+  }
+  if (bookTagFilter) {
+    const tf = bookTagFilter.toLowerCase();
+    list = list.filter(b => (b.tags||'').split(',').map(t => t.trim().toLowerCase()).includes(tf));
+  }
+  if (bookFormatFilter) list = list.filter(b => (b.format || 'novel') === bookFormatFilter);
+  if (bookOwnedFilter === 'owned') list = list.filter(b => (b.owned || 'no') !== 'no');
+  else if (bookOwnedFilter) list = list.filter(b => (b.owned || 'no') === bookOwnedFilter);
+  if (bookAuthorFilter) list = list.filter(b => (b.author || '') === bookAuthorFilter);
+  if (bookYearFilter) list = list.filter(b => String(b.year || '') === bookYearFilter);
+  if (bookLanguageFilter) list = list.filter(b => (b.language || []).includes(bookLanguageFilter));
+  if (bookRereadFilter) list = list.filter(b => (b.reread ? 'yes' : 'no') === bookRereadFilter);
+  if (bookRatingFilter !== '') {
+    const rf = +bookRatingFilter;
+    list = list.filter(b => rf === 0 ? !b.rating : (b.rating || 0) >= rf);
+  }
+  const cmp = {
+    added_desc:     (a,b) => (b.addedAt||'').localeCompare(a.addedAt||''),
+    added_asc:      (a,b) => (a.addedAt||'').localeCompare(b.addedAt||''),
+    last_read_desc: (a,b) => (b.lastReadAt||'').localeCompare(a.lastReadAt||''),
+    last_read_asc:  (a,b) => (a.lastReadAt||'').localeCompare(b.lastReadAt||''),
+    title_asc:      (a,b) => (a.title||'').localeCompare(b.title||''),
+    author_asc:     (a,b) => (a.author||'').localeCompare(b.author||'') || (a.title||'').localeCompare(b.title||''),
+    year_desc:      (a,b) => (b.year||0) - (a.year||0) || (a.title||'').localeCompare(b.title||''),
+    year_asc:       (a,b) => (a.year||0) - (b.year||0) || (a.title||'').localeCompare(b.title||''),
+    format_asc:     (a,b) => (a.format||'novel').localeCompare(b.format||'novel') || (a.title||'').localeCompare(b.title||''),
+    owned_asc:      (a,b) => (a.owned||'no').localeCompare(b.owned||'no') || (a.title||'').localeCompare(b.title||''),
+    language_asc:   (a,b) => ((a.language||[]).slice().sort().join(',')).localeCompare((b.language||[]).slice().sort().join(',')) || (a.title||'').localeCompare(b.title||''),
+    tags_asc:       (a,b) => (a.tags||'').localeCompare(b.tags||'') || (a.title||'').localeCompare(b.title||''),
+    rating_desc:    (a,b) => (b.rating||0) - (a.rating||0) || (a.title||'').localeCompare(b.title||''),
+    rating_asc:     (a,b) => (a.rating||0) - (b.rating||0) || (a.title||'').localeCompare(b.title||''),
+  }[bookSortMode] || (() => 0);
+  return list.sort(cmp);
+}
+
+const BOOK_UNGROUPED_SORTS = new Set(['added_desc', 'added_asc', 'last_read_desc', 'last_read_asc']);
+const BOOK_FORMAT_LABELS = { novel: 'Novel', nonfiction: 'Non-fiction', shortstories: 'Short stories' };
+const BOOK_OWNED_LABELS = { no: 'Not owned', physical: 'Physical', digital: 'Digital' };
+const LANGUAGE_LABELS = { english: 'English', italian: 'Italian' };
+const REREAD_LABELS = { no: 'Not re-read', yes: 'Re-read' };
+function bookGroupKey(b) {
+  switch (bookSortMode) {
+    case 'title_asc':    return b.title || '';
+    case 'author_asc':   return b.author || '';
+    case 'year_desc': case 'year_asc': return b.year || 0;
+    case 'format_asc':   return b.format || 'novel';
+    case 'owned_asc':    return b.owned || 'no';
+    case 'language_asc': return (b.language && b.language.length) ? b.language.slice().sort().join(',') : '';
+    case 'tags_asc':     return b.tags || '';
+    case 'rating_desc': case 'rating_asc': return b.rating || 0;
+    default:             return undefined;
+  }
+}
+function bookGroupLabel(key) {
+  switch (bookSortMode) {
+    case 'title_asc':    return key || '(untitled)';
+    case 'author_asc':   return key || 'No author';
+    case 'year_desc': case 'year_asc': return key ? String(key) : 'Unknown year';
+    case 'format_asc':   return BOOK_FORMAT_LABELS[key] || key;
+    case 'owned_asc':    return BOOK_OWNED_LABELS[key] || key;
+    case 'language_asc': return key ? key.split(',').map(l => LANGUAGE_LABELS[l] || l).join(' + ') : 'No language set';
+    case 'tags_asc':     return key || 'No tags';
+    case 'rating_desc': case 'rating_asc':
+      return key ? (key % 1 ? key.toFixed(1) : key) + ' / 5' : 'Unrated';
+    default:             return '';
+  }
+}
+function groupBooks(list) {
+  const groups = [];
+  let curKey, curItems = null;
+  list.forEach(b => {
+    const key = bookGroupKey(b);
+    if (!curItems || key !== curKey) {
+      curKey = key;
+      curItems = [];
+      groups.push({ label: bookGroupLabel(key), items: curItems });
+    }
+    curItems.push(b);
+  });
+  return groups;
+}
+
+function bookCoverInnerHTML(b) {
+  const hasArt = !!b.coverUrl;
+  const sub = [b.author, b.year].filter(Boolean).join(' · ');
+  return `
+      <div class="cover ${hasArt ? '' : 'art-fail'}" onclick="handleBookCoverClick('${esc(b.id)}')" tabindex="0">
+        ${hasArt ? `<img src="${esc(b.coverUrl)}" alt="" loading="lazy" onerror="this.parentElement.classList.add('art-fail')">` : ''}
+        <div class="cover-fallback">${esc(initials(b.title))}</div>
+        <div class="cover-caption">
+          <strong>${esc(b.title)}</strong>
+          <span>${esc(sub)}</span>
+        </div>
+      </div>`;
+}
+function bookCardHTML(b) {
+  return `
+    <div class="record" data-id="${esc(b.id)}">
+      ${bookCoverInnerHTML(b)}
+    </div>`;
+}
+
+function renderBookShelf() {
+  const list = filteredSortedBooks();
+  document.getElementById('book-shelf-count').textContent =
+    `${bookDb.books.length} book${bookDb.books.length === 1 ? '' : 's'}` +
+    (list.length !== bookDb.books.length ? ` · ${list.length} shown` : '');
+
+  document.getElementById('book-empty-state').classList.toggle('hidden', bookDb.books.length !== 0);
+  document.getElementById('book-no-results-state').classList.toggle('hidden', !(bookDb.books.length && !list.length));
+
+  const gridEl = document.getElementById('book-shelf-grid');
+  if (!bookDb.books.length || !list.length) {
+    gridEl.className = 'shelf-grid';
+    gridEl.innerHTML = '';
+  } else if (BOOK_UNGROUPED_SORTS.has(bookSortMode)) {
+    gridEl.className = 'shelf-grid';
+    gridEl.innerHTML = list.map(bookCardHTML).join('');
+  } else {
+    gridEl.className = 'shelf-groups';
+    gridEl.innerHTML = groupBooks(list).map(g => `
+      <section class="shelf-group">
+        <h3 class="shelf-group-label">${esc(g.label)}<span class="shelf-group-count">${g.items.length}</span></h3>
+        <div class="shelf-grid">${g.items.map(bookCardHTML).join('')}</div>
+      </section>`).join('');
+  }
+
+  renderBookAuthorFilterOptions();
+  renderBookYearFilterOptions();
+  renderBookTagFilterOptions();
+  renderBookTagDatalist();
+}
+function renderBookAuthorFilterOptions() {
+  const sel = document.getElementById('book-author-filter'), cur = sel.value;
+  const authors = new Set();
+  bookDb.books.forEach(b => { if (b.author && b.author.trim()) authors.add(b.author.trim()); });
+  const sorted = [...authors].sort((a,b) => a.localeCompare(b));
+  sel.innerHTML = '<option value="">All authors</option>' + sorted.map(a => `<option value="${esc(a)}">${esc(a)}</option>`).join('');
+  if (sorted.includes(cur)) sel.value = cur;
+}
+function renderBookYearFilterOptions() {
+  const sel = document.getElementById('book-year-filter'), cur = sel.value;
+  const years = new Set();
+  bookDb.books.forEach(b => { if (b.year) years.add(String(b.year)); });
+  const sorted = [...years].sort((a,b) => b.localeCompare(a));
+  sel.innerHTML = '<option value="">All years</option>' + sorted.map(y => `<option value="${esc(y)}">${esc(y)}</option>`).join('');
+  if (sorted.includes(cur)) sel.value = cur;
+}
+function renderBookTagFilterOptions() {
+  const sel = document.getElementById('book-tag-filter'), cur = sel.value;
+  const tags = new Set();
+  bookDb.books.forEach(b => (b.tags||'').split(',').forEach(t => { t = t.trim(); if (t) tags.add(t); }));
+  const sorted = [...tags].sort((a,b) => a.localeCompare(b));
+  sel.innerHTML = '<option value="">All tags</option>' + sorted.map(t => `<option value="${esc(t)}">${esc(t)}</option>`).join('');
+  if (sorted.includes(cur)) sel.value = cur;
+}
+function renderBookTagDatalist() {
+  const tags = new Set();
+  bookDb.books.forEach(b => (b.tags||'').split(',').forEach(t => { t = t.trim(); if (t) tags.add(t); }));
+  document.getElementById('book-tag-list').innerHTML = [...tags].sort((a,b)=>a.localeCompare(b)).map(t => `<option value="${esc(t)}">`).join('');
+}
+// Books have no "open" link at all (no reading-app deep link the way Apple Music/streaming
+// URLs work) — the cover click always opens the edit form, regardless of the global Edit
+// Mode toggle, since there's no alternate action for it to gate.
+function handleBookCoverClick(id) { openEditBookModal(id); }
 
 // ─────────────────────────────────────────
 // ADD / EDIT RECORD MODAL
@@ -1464,9 +1925,12 @@ function updateImdbRatingHint() {
   document.getElementById('mf-imdb-rating-hint').textContent = mfImdbRating ? `IMDb rating: ${mfImdbRating} / 10` : '';
 }
 function resetMovieForm() {
-  ['mf-title','mf-poster','mf-tags','mf-year','mf-streaming','mf-imdb'].forEach(id => document.getElementById(id).value = '');
+  ['mf-title','mf-poster','mf-tags','mf-year','mf-streaming','mf-imdb','mf-director','mf-actors','mf-last-viewed'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('mf-service').value = 'netflix';
   document.getElementById('mf-watched').value = 'no';
+  document.getElementById('mf-format').value = 'movie';
+  document.getElementById('mf-owned').value = 'no';
+  document.getElementById('mf-rewatched').checked = false;
   document.getElementById('mf-imdb-input').value = '';
   document.getElementById('mf-imdb-status').textContent = '';
   document.getElementById('mf-rating').value = 0;
@@ -1496,6 +1960,12 @@ function openEditMovieModal(id) {
   document.getElementById('mf-year').value = m.year || '';
   document.getElementById('mf-streaming').value = m.streamingUrl || '';
   document.getElementById('mf-imdb').value = m.imdbUrl || '';
+  document.getElementById('mf-director').value = m.director || '';
+  document.getElementById('mf-actors').value = m.actors || '';
+  document.getElementById('mf-format').value = m.format || 'movie';
+  document.getElementById('mf-owned').value = m.owned || 'no';
+  document.getElementById('mf-last-viewed').value = m.lastViewedAt || '';
+  document.getElementById('mf-rewatched').checked = !!m.rewatched;
   document.getElementById('mf-rating').value = (m.rating || 0) * 2;
   updateMovieRatingPicker((m.rating || 0) * 2);
   updateMoviePosterPreview();
@@ -1515,13 +1985,19 @@ function saveMovieForm() {
   const year = yearRaw ? +yearRaw : null;
   const streamingUrl = document.getElementById('mf-streaming').value.trim();
   const imdbUrl = document.getElementById('mf-imdb').value.trim();
+  const director = document.getElementById('mf-director').value.trim();
+  const actors = document.getElementById('mf-actors').value.trim();
+  const format = document.getElementById('mf-format').value || 'movie';
+  const owned = document.getElementById('mf-owned').value || 'no';
+  const lastViewedAt = document.getElementById('mf-last-viewed').value || '';
+  const rewatched = document.getElementById('mf-rewatched').checked;
   const rating = (+document.getElementById('mf-rating').value) / 2;
   if (!title || !streamingUrl) { toast('Title and Streaming Link are required'); return; }
   if (editingMovieId) {
     const m = movieDb.movies.find(x => x.id === editingMovieId);
-    if (m) Object.assign(m, { title, posterUrl: poster, tags, service, watched, year, streamingUrl, imdbUrl, imdbRating: mfImdbRating, rating });
+    if (m) Object.assign(m, { title, posterUrl: poster, tags, service, watched, year, streamingUrl, imdbUrl, imdbRating: mfImdbRating, rating, director, actors, format, owned, lastViewedAt, rewatched });
   } else {
-    movieDb.movies.unshift({ id: genId(), title, posterUrl: poster, tags, service, watched, year, streamingUrl, imdbUrl, imdbRating: mfImdbRating, rating, addedAt: todayISO() });
+    movieDb.movies.unshift({ id: genId(), title, posterUrl: poster, tags, service, watched, year, streamingUrl, imdbUrl, imdbRating: mfImdbRating, rating, director, actors, format, owned, lastViewedAt, rewatched, addedAt: todayISO() });
   }
   saveMovies(); renderMovieShelf(); closeModal('movie-modal');
   toast(editingMovieId ? 'Movie updated' : 'Added to shelf');
@@ -1566,6 +2042,9 @@ async function fetchImdbMeta(rawUrl) {
     year: yearMatch ? yearMatch[0] : '',
     poster: data.Poster && data.Poster !== 'N/A' ? data.Poster : '',
     genre: data.Genre && data.Genre !== 'N/A' ? data.Genre : '',
+    director: data.Director && data.Director !== 'N/A' ? data.Director : '',
+    actors: data.Actors && data.Actors !== 'N/A' ? data.Actors : '',
+    format: data.Type === 'series' ? 'series' : 'movie',
     imdbRating: data.imdbRating && data.imdbRating !== 'N/A' ? +data.imdbRating : null,
     imdbUrl: `https://www.imdb.com/title/${id}/`,
   };
@@ -1585,6 +2064,9 @@ async function fetchFromImdbLink() {
     document.getElementById('mf-year').value = meta.year;
     document.getElementById('mf-poster').value = meta.poster;
     document.getElementById('mf-imdb').value = meta.imdbUrl;
+    document.getElementById('mf-director').value = meta.director;
+    document.getElementById('mf-actors').value = meta.actors;
+    document.getElementById('mf-format').value = meta.format;
     if (!document.getElementById('mf-tags').value.trim() && meta.genre) document.getElementById('mf-tags').value = meta.genre;
     mfImdbRating = meta.imdbRating;
     updateMoviePosterPreview();
@@ -1605,6 +2087,173 @@ function saveOmdbKey() {
   if (key) localStorage.setItem(OMDB_KEY_STORAGE, key); else localStorage.removeItem(OMDB_KEY_STORAGE);
   closeModal('omdb-modal');
   toast(key ? 'OMDb key saved' : 'OMDb key cleared');
+}
+
+// ─────────────────────────────────────────
+// ADD / EDIT BOOK MODAL
+// ─────────────────────────────────────────
+let editingBookId = null;
+
+function updateBookRatingPicker(v) {
+  const rating = (+v) / 2;
+  document.getElementById('bk-rating-label').textContent = rating > 0 ? (rating % 1 ? rating.toFixed(1) : rating) + ' / 5' : 'Unrated';
+}
+function updateBookCoverPreview() {
+  const url = document.getElementById('bk-cover').value.trim();
+  const box = document.getElementById('book-art-preview');
+  box.innerHTML = url ? `<img src="${esc(url)}" onerror="this.parentElement.innerHTML='📖'">` : '📖';
+}
+function getBookLanguages() { return [...document.querySelectorAll('.bk-lang:checked')].map(el => el.value); }
+function setBookLanguages(langs) {
+  document.querySelectorAll('.bk-lang').forEach(el => { el.checked = (langs || []).includes(el.value); });
+}
+function resetBookForm() {
+  ['bk-title','bk-author','bk-cover','bk-tags','bk-year','bk-source','bk-last-read'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('bk-format').value = 'novel';
+  document.getElementById('bk-owned').value = 'no';
+  document.getElementById('bk-reread').checked = false;
+  document.getElementById('bk-link-input').value = '';
+  document.getElementById('bk-link-status').textContent = '';
+  document.getElementById('bk-rating').value = 0;
+  updateBookRatingPicker(0);
+  updateBookCoverPreview();
+  setBookLanguages([]);
+}
+function openAddBookModal() {
+  editingBookId = null;
+  resetBookForm();
+  document.getElementById('book-modal-title').textContent = 'Add Book';
+  document.getElementById('bk-delete-btn').style.display = 'none';
+  openModal('book-modal');
+  document.getElementById('bk-link-input').focus();
+}
+function openEditBookModal(id) {
+  const b = bookDb.books.find(x => x.id === id);
+  if (!b) return;
+  editingBookId = id;
+  resetBookForm();
+  document.getElementById('bk-title').value = b.title || '';
+  document.getElementById('bk-author').value = b.author || '';
+  document.getElementById('bk-cover').value = b.coverUrl || '';
+  document.getElementById('bk-tags').value = b.tags || '';
+  document.getElementById('bk-format').value = b.format || 'novel';
+  document.getElementById('bk-owned').value = b.owned || 'no';
+  document.getElementById('bk-year').value = b.year || '';
+  document.getElementById('bk-source').value = b.sourceUrl || '';
+  document.getElementById('bk-last-read').value = b.lastReadAt || '';
+  document.getElementById('bk-reread').checked = !!b.reread;
+  setBookLanguages(b.language);
+  document.getElementById('bk-rating').value = (b.rating || 0) * 2;
+  updateBookRatingPicker((b.rating || 0) * 2);
+  updateBookCoverPreview();
+  document.getElementById('book-modal-title').textContent = 'Edit Book';
+  document.getElementById('bk-delete-btn').style.display = '';
+  openModal('book-modal');
+}
+function saveBookForm() {
+  const title = document.getElementById('bk-title').value.trim();
+  const author = document.getElementById('bk-author').value.trim();
+  const cover = document.getElementById('bk-cover').value.trim();
+  const tags = document.getElementById('bk-tags').value.trim();
+  const format = document.getElementById('bk-format').value || 'novel';
+  const owned = document.getElementById('bk-owned').value || 'no';
+  const yearRaw = document.getElementById('bk-year').value.trim();
+  const year = yearRaw ? +yearRaw : null;
+  const sourceUrl = document.getElementById('bk-source').value.trim();
+  const lastReadAt = document.getElementById('bk-last-read').value || '';
+  const reread = document.getElementById('bk-reread').checked;
+  const language = getBookLanguages();
+  const rating = (+document.getElementById('bk-rating').value) / 2;
+  if (!title) { toast('Title is required'); return; }
+  if (editingBookId) {
+    const b = bookDb.books.find(x => x.id === editingBookId);
+    if (b) Object.assign(b, { title, author, coverUrl: cover, tags, format, owned, year, sourceUrl, lastReadAt, reread, language, rating });
+  } else {
+    bookDb.books.unshift({ id: genId(), title, author, coverUrl: cover, tags, format, owned, year, sourceUrl, lastReadAt, reread, language, rating, addedAt: todayISO() });
+  }
+  saveBooks(); renderBookShelf(); closeModal('book-modal');
+  toast(editingBookId ? 'Book updated' : 'Added to shelf');
+}
+function deleteBook(id, fromModal) {
+  const b = bookDb.books.find(x => x.id === id);
+  if (!b) return;
+  if (!confirm(`Remove "${b.title}" from the shelf?`)) return;
+  bookDb.books = bookDb.books.filter(x => x.id !== id);
+  saveBooks(); renderBookShelf();
+  if (fromModal) closeModal('book-modal');
+  toast('Removed from shelf');
+}
+
+// ─────────────────────────────────────────
+// GOOGLE BOOKS — books have no "open" link (no IMDb-style deep link into a reading app), so
+// the link/ISBN field here is purely for lookup, same role imdbUrl plays for Movies. The
+// Google Books volumes API is free and CORS-enabled; the per-volume/ISBN lookups used here
+// don't need a key (unlike OMDb).
+// ─────────────────────────────────────────
+function parseGoogleBooksInput(raw) {
+  const trimmed = raw.trim();
+  const isbn = trimmed.replace(/[-\s]/g, '');
+  if (/^(97[89])?\d{9}(\d|X)$/i.test(isbn)) return { isbn };
+  try {
+    const url = new URL(/^https?:\/\//i.test(trimmed) ? trimmed : 'https://' + trimmed);
+    if (!/(^|\.)(books\.google\.[a-z.]+|google\.[a-z.]+)$/.test(url.hostname)) return null;
+    const idParam = url.searchParams.get('id');
+    if (idParam) return { volumeId: idParam };
+    const m = url.pathname.match(/\/books\/edition\/[^/]+\/([^/?]+)/);
+    if (m) return { volumeId: m[1] };
+  } catch {}
+  return null;
+}
+function upsizeGoogleCover(url) {
+  if (!url) return '';
+  return url.replace(/^http:/, 'https:').replace(/&edge=curl/, '').replace(/zoom=\d/, 'zoom=2');
+}
+async function fetchGoogleBooksMeta(rawUrl) {
+  const parsed = parseGoogleBooksInput(rawUrl);
+  if (!parsed) return null;
+  const query = parsed.volumeId
+    ? `https://www.googleapis.com/books/v1/volumes/${encodeURIComponent(parsed.volumeId)}`
+    : `https://www.googleapis.com/books/v1/volumes?q=isbn:${encodeURIComponent(parsed.isbn)}`;
+  const res = await fetch(query);
+  if (!res.ok) throw new Error(`Google Books lookup ${res.status}`);
+  const data = await res.json();
+  const item = parsed.volumeId ? data : (data.items && data.items[0]);
+  if (!item || !item.volumeInfo) return null;
+  const info = item.volumeInfo;
+  const langMap = { en: 'english', it: 'italian' };
+  return {
+    title: info.title || '',
+    author: (info.authors || []).join(', '),
+    year: info.publishedDate ? info.publishedDate.slice(0, 4) : '',
+    cover: upsizeGoogleCover((info.imageLinks && (info.imageLinks.thumbnail || info.imageLinks.smallThumbnail)) || ''),
+    categories: (info.categories || []).join(', '),
+    language: langMap[info.language] ? [langMap[info.language]] : [],
+    sourceUrl: info.infoLink || info.canonicalVolumeLink || rawUrl,
+  };
+}
+async function fetchFromBookLink() {
+  const raw = document.getElementById('bk-link-input').value.trim();
+  const status = document.getElementById('bk-link-status');
+  if (!raw) { toast('Paste a Google Books link or ISBN first'); return; }
+  status.textContent = 'Fetching…';
+  try {
+    const meta = await fetchGoogleBooksMeta(raw);
+    if (!meta) {
+      status.textContent = "Couldn't recognize that as a Google Books link or ISBN — fill in the details manually below.";
+      return;
+    }
+    document.getElementById('bk-title').value = meta.title;
+    document.getElementById('bk-author').value = meta.author;
+    document.getElementById('bk-year').value = meta.year;
+    document.getElementById('bk-cover').value = meta.cover;
+    document.getElementById('bk-source').value = meta.sourceUrl;
+    if (!document.getElementById('bk-tags').value.trim() && meta.categories) document.getElementById('bk-tags').value = meta.categories;
+    if (meta.language.length) setBookLanguages(meta.language);
+    updateBookCoverPreview();
+    status.textContent = `✓ Found "${meta.title}"` + (meta.author ? ` — ${meta.author}` : '');
+  } catch (err) {
+    status.textContent = 'Lookup failed (' + err.message + ') — fill in manually below.';
+  }
 }
 
 // ─────────────────────────────────────────
