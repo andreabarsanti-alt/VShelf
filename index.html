@@ -418,6 +418,7 @@ main{padding-bottom:60px;}
     </select>
     <select id="movie-service-filter" onchange="setMovieServiceFilter(this.value)">
       <option value="">All services</option>
+      <option value="none">None</option>
       <option value="netflix">Netflix</option>
       <option value="prime">Prime Video</option>
       <option value="disney">Disney+</option>
@@ -678,6 +679,7 @@ main{padding-bottom:60px;}
     <div class="field-row">
       <div class="field" style="flex:1"><label>Service</label>
         <select id="mf-service">
+          <option value="none">None</option>
           <option value="netflix">Netflix</option>
           <option value="prime">Prime Video</option>
           <option value="disney">Disney+</option>
@@ -1393,7 +1395,7 @@ function filteredSortedMovies() {
     const tf = movieTagFilter.toLowerCase();
     list = list.filter(m => (m.tags||'').split(',').map(t => t.trim().toLowerCase()).includes(tf));
   }
-  if (movieServiceFilter) list = list.filter(m => (m.service || 'other') === movieServiceFilter);
+  if (movieServiceFilter) list = list.filter(m => (m.service || 'none') === movieServiceFilter);
   if (movieWatchedFilter) list = list.filter(m => (m.watched || 'no') === movieWatchedFilter);
   if (movieYearFilter) list = list.filter(m => String(m.year || '') === movieYearFilter);
   if (movieFormatFilter) list = list.filter(m => (m.format || 'movie') === movieFormatFilter);
@@ -1415,7 +1417,7 @@ function filteredSortedMovies() {
     year_desc:    (a,b) => (b.year||0) - (a.year||0) || (a.title||'').localeCompare(b.title||''),
     year_asc:     (a,b) => (a.year||0) - (b.year||0) || (a.title||'').localeCompare(b.title||''),
     format_asc:   (a,b) => (a.format||'movie').localeCompare(b.format||'movie') || (a.title||'').localeCompare(b.title||''),
-    service_asc:  (a,b) => (a.service||'other').localeCompare(b.service||'other') || (a.title||'').localeCompare(b.title||''),
+    service_asc:  (a,b) => (a.service||'none').localeCompare(b.service||'none') || (a.title||'').localeCompare(b.title||''),
     owned_asc:    (a,b) => (a.owned||'no').localeCompare(b.owned||'no') || (a.title||'').localeCompare(b.title||''),
     watched_asc:  (a,b) => (a.watched||'no').localeCompare(b.watched||'no') || (a.title||'').localeCompare(b.title||''),
     rewatched_asc:(a,b) => (a.rewatched?'1':'0').localeCompare(b.rewatched?'1':'0') || (a.title||'').localeCompare(b.title||''),
@@ -1427,7 +1429,7 @@ function filteredSortedMovies() {
 }
 
 const MOVIE_UNGROUPED_SORTS = new Set(['added_desc', 'added_asc', 'last_viewed_desc', 'last_viewed_asc']);
-const SERVICE_LABELS = { netflix: 'Netflix', prime: 'Prime Video', disney: 'Disney+', max: 'Max', hulu: 'Hulu', appletv: 'Apple TV+', paramount: 'Paramount+', other: 'Other' };
+const SERVICE_LABELS = { none: 'None', netflix: 'Netflix', prime: 'Prime Video', disney: 'Disney+', max: 'Max', hulu: 'Hulu', appletv: 'Apple TV+', paramount: 'Paramount+', other: 'Other' };
 const WATCHED_LABELS = { no: 'Not watched', yes: 'Watched' };
 const MOVIE_FORMAT_LABELS = { movie: 'Movie', series: 'Series' };
 const MOVIE_OWNED_LABELS = { no: 'Not owned', dvd: 'DVD', bluray: 'Blu-ray', other: 'Other' };
@@ -1438,7 +1440,7 @@ function movieGroupKey(m) {
     case 'director_asc':                 return m.director || '';
     case 'year_desc': case 'year_asc':   return m.year || 0;
     case 'format_asc':                   return m.format || 'movie';
-    case 'service_asc':                  return m.service || 'other';
+    case 'service_asc':                  return m.service || 'none';
     case 'owned_asc':                    return m.owned || 'no';
     case 'watched_asc':                  return m.watched || 'no';
     case 'rewatched_asc':                return m.rewatched ? 'yes' : 'no';
@@ -1926,7 +1928,7 @@ function updateImdbRatingHint() {
 }
 function resetMovieForm() {
   ['mf-title','mf-poster','mf-tags','mf-year','mf-streaming','mf-imdb','mf-director','mf-actors','mf-last-viewed'].forEach(id => document.getElementById(id).value = '');
-  document.getElementById('mf-service').value = 'netflix';
+  document.getElementById('mf-service').value = 'none';
   document.getElementById('mf-watched').value = 'no';
   document.getElementById('mf-format').value = 'movie';
   document.getElementById('mf-owned').value = 'no';
@@ -1955,7 +1957,7 @@ function openEditMovieModal(id) {
   document.getElementById('mf-title').value = m.title || '';
   document.getElementById('mf-poster').value = m.posterUrl || '';
   document.getElementById('mf-tags').value = m.tags || '';
-  document.getElementById('mf-service').value = m.service || 'netflix';
+  document.getElementById('mf-service').value = m.service || 'none';
   document.getElementById('mf-watched').value = m.watched || 'no';
   document.getElementById('mf-year').value = m.year || '';
   document.getElementById('mf-streaming').value = m.streamingUrl || '';
@@ -1979,7 +1981,7 @@ function saveMovieForm() {
   const title = document.getElementById('mf-title').value.trim();
   const poster = document.getElementById('mf-poster').value.trim();
   const tags = document.getElementById('mf-tags').value.trim();
-  const service = document.getElementById('mf-service').value || 'other';
+  const service = document.getElementById('mf-service').value || 'none';
   const watched = document.getElementById('mf-watched').value || 'no';
   const yearRaw = document.getElementById('mf-year').value.trim();
   const year = yearRaw ? +yearRaw : null;
