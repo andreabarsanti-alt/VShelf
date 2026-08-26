@@ -1,3 +1,22 @@
 {
-  "books": []
+  "books": [
+    {
+      "id": "vmtakueilhqfo",
+      "title": "La polvere del mondo",
+      "author": "Nicolas Bouvier",
+      "coverUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRO3rt5XywvfhfK5QxI3gxmqZsGCrEPgxdY-xL7-PCG2g&s=10",
+      "tags": "",
+      "format": "nonfiction",
+      "owned": "physical",
+      "year": 1953,
+      "sourceUrl": "",
+      "lastReadAt": "",
+      "reread": false,
+      "language": [
+        "italian"
+      ],
+      "rating": 0,
+      "addedAt": "2026-08-26"
+    }
+  ]
 }
