@@ -1,6 +1,45 @@
 {
   "records": [
     {
+      "id": "vmt9rdta4up20",
+      "title": "Wildflowers",
+      "artist": "Tom Petty",
+      "appleMusicUrl": "https://music.apple.com/us/album/wildflowers/892018539?uo=4",
+      "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/a0/04/20/a004206c-6830-2f4d-a99d-595b4964666d/093624937456.jpg/1200x1200bb.jpg",
+      "tags": "",
+      "type": "album",
+      "owned": "cd",
+      "year": 1994,
+      "rating": 3,
+      "addedAt": "2026-08-26"
+    },
+    {
+      "id": "vmt9rd1oh8xjb",
+      "title": "Let It Bleed",
+      "artist": "The Rolling Stones",
+      "appleMusicUrl": "https://music.apple.com/us/album/let-it-bleed-remastered-2019/1500642838?uo=4",
+      "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/69/64/67/696467fe-9ed1-b65e-1016-a10d07e6464d/20UMGIM14087.rgb.jpg/1200x1200bb.jpg",
+      "tags": "",
+      "type": "album",
+      "owned": "vinyl",
+      "year": 1969,
+      "rating": 4,
+      "addedAt": "2026-08-26"
+    },
+    {
+      "id": "vmt9rbjlblby7",
+      "title": "Automatic For The People",
+      "artist": "R.E.M.",
+      "appleMusicUrl": "https://music.apple.com/us/album/automatic-for-the-people-25th-anniversary-edition/1440947163?uo=4",
+      "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/97/1a/9b/971a9bf7-b6dc-8712-ac3a-1d4351512c8b/17CRGIM03466.rgb.jpg/1200x1200bb.jpg",
+      "tags": "",
+      "type": "album",
+      "owned": "cd",
+      "year": 1992,
+      "rating": 4.5,
+      "addedAt": "2026-08-26"
+    },
+    {
       "id": "vmt7byh7som47",
       "title": "Eagles",
       "artist": "Eagles",
