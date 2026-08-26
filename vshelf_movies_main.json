@@ -1,3 +1,24 @@
 {
-  "movies": []
+  "movies": [
+    {
+      "id": "vmtakxxlsf919",
+      "title": "Cinema Paradiso",
+      "posterUrl": "https://m.media-amazon.com/images/M/MV5BMTljNzc4YWEtYTZlMS00ODMyLWIwMTAtNWQxY2VkMDEwYTk5XkEyXkFqcGc@._V1_QL75_UX380_CR0,0,380,562_.jpg",
+      "tags": "Drama, Romance",
+      "service": "other",
+      "watched": "no",
+      "year": 1990,
+      "streamingUrl": "https://www.raiplay.it/programmi/nuovocinemaparadiso?wt_mc=2.app.share.raiplay_prg_NuovoCinemaParadiso.",
+      "imdbUrl": "https://www.imdb.com/title/tt0095765/",
+      "imdbRating": 8.5,
+      "rating": 0,
+      "director": "Giuseppe Tornatore",
+      "actors": "Philippe Noiret, Enzo Cannavale, Antonella Attili",
+      "format": "movie",
+      "owned": "no",
+      "lastViewedAt": "",
+      "rewatched": false,
+      "addedAt": "2026-08-26"
+    }
+  ]
 }
