@@ -1,6 +1,45 @@
 {
   "records": [
     {
+      "id": "vmtfucagcu2pe",
+      "title": "Gossip in the grain",
+      "artist": "Ray LaMontagne",
+      "appleMusicUrl": "https://music.apple.com/nl/album/gossip-in-the-grain/1364219336",
+      "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music118/v4/c4/cc/37/c4cc37d1-0164-f7cd-baba-11067a4471bb/ray1.jpg/632x632bb.webp",
+      "tags": "",
+      "type": "album",
+      "owned": "no",
+      "year": 2008,
+      "rating": 0,
+      "addedAt": "2026-08-30"
+    },
+    {
+      "id": "vmteqpqvrai9x",
+      "title": "The Rise and Fall of Ziggy Stardust and the Spiders from Mars",
+      "artist": "David Bowie",
+      "appleMusicUrl": "https://music.apple.com/us/album/the-rise-and-fall-of-ziggy-stardust-and-the/1039796877?uo=4",
+      "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music114/v4/5f/fa/56/5ffa56c2-ea1f-7a17-6bad-192ff9b6476d/825646124206.jpg/1200x1200bb.jpg",
+      "tags": "",
+      "type": "album",
+      "owned": "cd",
+      "year": 1972,
+      "rating": 4,
+      "addedAt": "2026-08-29"
+    },
+    {
+      "id": "vmtbm83uer052",
+      "title": "American IV: The Man Comes Around",
+      "artist": "Johnny Cash",
+      "appleMusicUrl": "https://music.apple.com/us/album/american-iv-the-man-comes-around/1440811207?uo=4",
+      "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/ac/42/cd/ac42cddb-98f0-a78b-6aac-4f08266d30c4/00602537277353.rgb.jpg/1200x1200bb.jpg",
+      "tags": "",
+      "type": "album",
+      "owned": "cd",
+      "year": 2002,
+      "rating": 3.5,
+      "addedAt": "2026-08-27"
+    },
+    {
       "id": "vmta0zoc261xc",
       "title": "Wish You Were Here",
       "artist": "Pink Floyd",
