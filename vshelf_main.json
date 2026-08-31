@@ -10,7 +10,7 @@
       "type": "album",
       "owned": "cd",
       "year": 2003,
-      "rating": 0,
+      "rating": 4,
       "addedAt": "2026-08-31"
     },
     {
@@ -36,7 +36,7 @@
       "type": "album",
       "owned": "cd",
       "year": 2000,
-      "rating": 0,
+      "rating": 3,
       "addedAt": "2026-08-30"
     },
     {
