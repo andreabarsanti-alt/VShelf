@@ -1,6 +1,45 @@
 {
   "records": [
     {
+      "id": "vmth5eor4jzjo",
+      "title": "Rainy Day Music",
+      "artist": "The Jayhawks",
+      "appleMusicUrl": "https://music.apple.com/us/album/rainy-day-music-expanded-edition/1443637432?uo=4",
+      "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music128/v4/5f/4b/c1/5f4bc1e7-206c-65ac-f5a1-a31cf3753131/00602537930265.rgb.jpg/1200x1200bb.jpg",
+      "tags": "",
+      "type": "album",
+      "owned": "cd",
+      "year": 2003,
+      "rating": 0,
+      "addedAt": "2026-08-31"
+    },
+    {
+      "id": "vmtfzq4vxxz16",
+      "title": "Yankee Hotel Foxtrot",
+      "artist": "Wilco",
+      "appleMusicUrl": "https://music.apple.com/us/album/yankee-hotel-foxtrot/300981120?uo=4",
+      "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/79/1d/3c/791d3cfe-d1b0-67a9-acbd-559fd83b3401/075597966961.jpg/1200x1200bb.jpg",
+      "tags": "",
+      "type": "album",
+      "owned": "vinyl",
+      "year": 2002,
+      "rating": 4.5,
+      "addedAt": "2026-08-30"
+    },
+    {
+      "id": "vmtfvovt1d346",
+      "title": "Kid A",
+      "artist": "Radiohead",
+      "appleMusicUrl": "https://music.apple.com/us/album/kid-a/1097862870?uo=4",
+      "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music122/v4/bd/8e/13/bd8e1358-b367-a689-cb84-cebd0b067dc4/634904078263.png/1200x1200bb.jpg",
+      "tags": "",
+      "type": "album",
+      "owned": "cd",
+      "year": 2000,
+      "rating": 0,
+      "addedAt": "2026-08-30"
+    },
+    {
       "id": "vmtfucagcu2pe",
       "title": "Gossip in the grain",
       "artist": "Ray LaMontagne",
@@ -10,7 +49,7 @@
       "type": "album",
       "owned": "no",
       "year": 2008,
-      "rating": 0,
+      "rating": 3,
       "addedAt": "2026-08-30"
     },
     {
