@@ -1,6 +1,19 @@
 {
   "records": [
     {
+      "id": "vmtickko6u8b0",
+      "title": "Abbey Road",
+      "artist": "The Beatles",
+      "appleMusicUrl": "https://music.apple.com/us/album/abbey-road-remastered/1441164426?uo=4",
+      "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music112/v4/df/db/61/dfdb615d-47f8-06e9-9533-b96daccc029f/18UMGIM31076.rgb.jpg/1200x1200bb.jpg",
+      "tags": "",
+      "type": "album",
+      "owned": "vinyl",
+      "year": 1969,
+      "rating": 5,
+      "addedAt": "2026-09-01"
+    },
+    {
       "id": "vmth5eor4jzjo",
       "title": "Rainy Day Music",
       "artist": "The Jayhawks",
@@ -10,7 +23,7 @@
       "type": "album",
       "owned": "cd",
       "year": 2003,
-      "rating": 4,
+      "rating": 5,
       "addedAt": "2026-08-31"
     },
     {
@@ -23,7 +36,7 @@
       "type": "album",
       "owned": "vinyl",
       "year": 2002,
-      "rating": 4.5,
+      "rating": 5,
       "addedAt": "2026-08-30"
     },
     {
@@ -62,7 +75,7 @@
       "type": "album",
       "owned": "cd",
       "year": 1972,
-      "rating": 4,
+      "rating": 5,
       "addedAt": "2026-08-29"
     },
     {
@@ -75,7 +88,7 @@
       "type": "album",
       "owned": "cd",
       "year": 2002,
-      "rating": 3.5,
+      "rating": 5,
       "addedAt": "2026-08-27"
     },
     {
@@ -88,7 +101,7 @@
       "type": "album",
       "owned": "vinyl",
       "year": 1975,
-      "rating": 3.5,
+      "rating": 5,
       "addedAt": "2026-08-26"
     },
     {
@@ -101,7 +114,7 @@
       "type": "album",
       "owned": "vinyl",
       "year": 1978,
-      "rating": 4.5,
+      "rating": 5,
       "addedAt": "2026-08-26"
     },
     {
@@ -114,7 +127,7 @@
       "type": "album",
       "owned": "vinyl",
       "year": 1979,
-      "rating": 3.5,
+      "rating": 5,
       "addedAt": "2026-08-26"
     },
     {
@@ -153,7 +166,7 @@
       "type": "album",
       "owned": "vinyl",
       "year": 1969,
-      "rating": 4,
+      "rating": 5,
       "addedAt": "2026-08-26"
     },
     {
@@ -166,7 +179,7 @@
       "type": "album",
       "owned": "cd",
       "year": 1992,
-      "rating": 4.5,
+      "rating": 5,
       "addedAt": "2026-08-26"
     },
     {
@@ -179,7 +192,7 @@
       "type": "album",
       "owned": "no",
       "year": 1972,
-      "rating": 2,
+      "rating": 1,
       "addedAt": "2026-08-24"
     },
     {
@@ -192,7 +205,7 @@
       "type": "album",
       "owned": "vinyl",
       "year": 1968,
-      "rating": 4,
+      "rating": 5,
       "addedAt": "2026-08-24"
     }
   ]
