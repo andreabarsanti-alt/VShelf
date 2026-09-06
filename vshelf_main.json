@@ -1,6 +1,71 @@
 {
   "records": [
     {
+      "id": "vmtpn8d4s5mwr",
+      "title": "John Wesley Harding",
+      "artist": "Bob Dylan",
+      "appleMusicUrl": "https://music.apple.com/us/album/john-wesley-harding/181457097?uo=4",
+      "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/2e/90/ac/2e90ac6d-c8e9-0f42-8852-af968be471dd/mzi.uchoqyha.jpg/1200x1200bb.jpg",
+      "tags": "",
+      "type": "album",
+      "owned": "no",
+      "year": 1967,
+      "rating": 0,
+      "addedAt": "2026-09-06"
+    },
+    {
+      "id": "vmtpn7qkk5nl4",
+      "title": "Everybody Knows This Is Nowhere",
+      "artist": "Neil Young & Crazy Horse",
+      "appleMusicUrl": "https://music.apple.com/us/album/everybody-knows-this-is-nowhere/1015769589?uo=4",
+      "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music125/v4/86/05/0d/86050dc2-b99f-9e0e-1af5-549d279b7638/093624924739.jpg/1200x1200bb.jpg",
+      "tags": "",
+      "type": "album",
+      "owned": "cd",
+      "year": 1969,
+      "rating": 0,
+      "addedAt": "2026-09-06"
+    },
+    {
+      "id": "vmtpn78zsszt3",
+      "title": "Zuma",
+      "artist": "Neil Young & Crazy Horse",
+      "appleMusicUrl": "https://music.apple.com/us/album/zuma/1015765336?uo=4",
+      "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/44/49/f5/4449f567-6cd6-4fc8-06aa-74e09a26c795/093624924685.jpg/1200x1200bb.jpg",
+      "tags": "",
+      "type": "album",
+      "owned": "vinyl",
+      "year": 1975,
+      "rating": 0,
+      "addedAt": "2026-09-06"
+    },
+    {
+      "id": "vmtkkouqmypy0",
+      "title": "Elephant",
+      "artist": "The White Stripes",
+      "appleMusicUrl": "https://music.apple.com/us/album/elephant/1533513536?uo=4",
+      "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music114/v4/07/25/09/0725098a-09f4-f240-e551-94384a590371/886448799009.jpg/1200x1200bb.jpg",
+      "tags": "",
+      "type": "album",
+      "owned": "no",
+      "year": 2003,
+      "rating": 0,
+      "addedAt": "2026-09-02"
+    },
+    {
+      "id": "vmtkhxhc2wcia",
+      "title": "Homogenic",
+      "artist": "Björk",
+      "appleMusicUrl": "https://music.apple.com/it/album/homogenic/1726654447",
+      "artworkUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS1qj-MO2AM57WhOSwS4aOgRXQiBD2fqGwlR25yadC05g&s=10",
+      "tags": "",
+      "type": "album",
+      "owned": "no",
+      "year": 1997,
+      "rating": 0,
+      "addedAt": "2026-09-02"
+    },
+    {
       "id": "vmtickko6u8b0",
       "title": "Abbey Road",
       "artist": "The Beatles",
