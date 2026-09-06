@@ -1,6 +1,19 @@
 {
   "records": [
     {
+      "id": "vmtpq3vy5j2cj",
+      "title": "Brother in arms",
+      "artist": "Dire Straits",
+      "appleMusicUrl": "https://music.apple.com/it/album/brothers-in-arms-remastered-1996/1565391787",
+      "artworkUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTQ-4ZRRcGZWnXqLf5IEFB4ROAaCvwHbJf8m96BFFIRxQ&s",
+      "tags": "",
+      "type": "album",
+      "owned": "no",
+      "year": 1985,
+      "rating": 3,
+      "addedAt": "2026-09-06"
+    },
+    {
       "id": "vmtpn8d4s5mwr",
       "title": "John Wesley Harding",
       "artist": "Bob Dylan",
@@ -10,7 +23,7 @@
       "type": "album",
       "owned": "no",
       "year": 1967,
-      "rating": 0,
+      "rating": 3,
       "addedAt": "2026-09-06"
     },
     {
@@ -23,7 +36,7 @@
       "type": "album",
       "owned": "cd",
       "year": 1969,
-      "rating": 0,
+      "rating": 5,
       "addedAt": "2026-09-06"
     },
     {
@@ -36,7 +49,7 @@
       "type": "album",
       "owned": "vinyl",
       "year": 1975,
-      "rating": 0,
+      "rating": 5,
       "addedAt": "2026-09-06"
     },
     {
@@ -49,7 +62,7 @@
       "type": "album",
       "owned": "no",
       "year": 2003,
-      "rating": 0,
+      "rating": 3,
       "addedAt": "2026-09-02"
     },
     {
@@ -62,7 +75,7 @@
       "type": "album",
       "owned": "no",
       "year": 1997,
-      "rating": 0,
+      "rating": 3,
       "addedAt": "2026-09-02"
     },
     {
