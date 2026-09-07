@@ -1,6 +1,32 @@
 {
   "records": [
     {
+      "id": "vmtrkoc7sznk4",
+      "title": "Station to Station",
+      "artist": "David Bowie",
+      "appleMusicUrl": "https://music.apple.com/us/album/station-to-station-2016-remaster/1195104858?uo=4",
+      "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/91/d8/47/91d847ac-8e39-85b0-36a6-ab3b8db46803/190295990268.jpg/1200x1200bb.jpg",
+      "tags": "",
+      "type": "album",
+      "owned": "vinyl",
+      "year": 1976,
+      "rating": 4,
+      "addedAt": "2026-09-07"
+    },
+    {
+      "id": "vmtr888dnjuv4",
+      "title": "Led Zeppelin III",
+      "artist": "Led Zeppelin",
+      "appleMusicUrl": "https://music.apple.com/us/album/led-zeppelin-iii-deluxe-edition/836963816?uo=4",
+      "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/d5/73/6e/d5736eca-a021-5306-7e47-9fae91098c36/603497904624.jpg/1200x1200bb.jpg",
+      "tags": "",
+      "type": "album",
+      "owned": "vinyl",
+      "year": 1970,
+      "rating": 4,
+      "addedAt": "2026-09-07"
+    },
+    {
       "id": "vmtq930aasgj4",
       "title": "My Aim Is True",
       "artist": "Elvis Costello",
@@ -127,7 +153,7 @@
       "type": "album",
       "owned": "vinyl",
       "year": 2002,
-      "rating": 4.5,
+      "rating": 5,
       "addedAt": "2026-08-30"
     },
     {
@@ -270,7 +296,7 @@
       "type": "album",
       "owned": "cd",
       "year": 1992,
-      "rating": 4.5,
+      "rating": 5,
       "addedAt": "2026-08-26"
     },
     {
