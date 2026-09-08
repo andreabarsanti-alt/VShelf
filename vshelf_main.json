@@ -10,7 +10,7 @@
       "type": "album",
       "owned": "vinyl",
       "year": 1976,
-      "rating": 4,
+      "rating": 5,
       "addedAt": "2026-09-07"
     },
     {
@@ -23,7 +23,7 @@
       "type": "album",
       "owned": "vinyl",
       "year": 1970,
-      "rating": 4,
+      "rating": 5,
       "addedAt": "2026-09-07"
     },
     {
@@ -75,7 +75,7 @@
       "type": "album",
       "owned": "cd",
       "year": 1969,
-      "rating": 3.5,
+      "rating": 5,
       "addedAt": "2026-09-06"
     },
     {
@@ -88,7 +88,7 @@
       "type": "album",
       "owned": "vinyl",
       "year": 1975,
-      "rating": 3.5,
+      "rating": 5,
       "addedAt": "2026-09-06"
     },
     {
@@ -101,7 +101,7 @@
       "type": "album",
       "owned": "no",
       "year": 2003,
-      "rating": 3.5,
+      "rating": 5,
       "addedAt": "2026-09-02"
     },
     {
@@ -140,7 +140,7 @@
       "type": "album",
       "owned": "cd",
       "year": 2003,
-      "rating": 4,
+      "rating": 5,
       "addedAt": "2026-08-31"
     },
     {
@@ -192,7 +192,7 @@
       "type": "album",
       "owned": "cd",
       "year": 1972,
-      "rating": 4,
+      "rating": 5,
       "addedAt": "2026-08-29"
     },
     {
@@ -205,7 +205,7 @@
       "type": "album",
       "owned": "cd",
       "year": 2002,
-      "rating": 4,
+      "rating": 5,
       "addedAt": "2026-08-27"
     },
     {
@@ -218,7 +218,7 @@
       "type": "album",
       "owned": "vinyl",
       "year": 1975,
-      "rating": 3.5,
+      "rating": 5,
       "addedAt": "2026-08-26"
     },
     {
@@ -231,7 +231,7 @@
       "type": "album",
       "owned": "vinyl",
       "year": 1978,
-      "rating": 4,
+      "rating": 5,
       "addedAt": "2026-08-26"
     },
     {
@@ -244,7 +244,7 @@
       "type": "album",
       "owned": "vinyl",
       "year": 1979,
-      "rating": 3.5,
+      "rating": 5,
       "addedAt": "2026-08-26"
     },
     {
@@ -283,7 +283,7 @@
       "type": "album",
       "owned": "vinyl",
       "year": 1969,
-      "rating": 4,
+      "rating": 5,
       "addedAt": "2026-08-26"
     },
     {
@@ -309,7 +309,7 @@
       "type": "album",
       "owned": "no",
       "year": 1972,
-      "rating": 2,
+      "rating": 1,
       "addedAt": "2026-08-24"
     },
     {
@@ -322,7 +322,7 @@
       "type": "album",
       "owned": "vinyl",
       "year": 1968,
-      "rating": 4,
+      "rating": 5,
       "addedAt": "2026-08-24"
     }
   ]
