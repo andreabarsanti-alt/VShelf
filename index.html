@@ -266,7 +266,7 @@ main{padding-bottom:60px;}
 
 
 /* Rating — no star glyphs anywhere (dropped after repeated iOS/iPadOS home-screen Safari
-   rendering bugs). rating is still a 0–5, half-step number under the hood, still settable
+   rendering bugs). rating is restricted to 1, 3 or 5 (plus unrated), still settable
    via the slider below and still usable for filtering/sorting — grouped shelves (see
    .shelf-group below) are how a rating value is surfaced on the shelf itself now. */
 .rating-picker{display:flex; align-items:center; gap:12px; flex-wrap:wrap;}
@@ -371,9 +371,7 @@ main{padding-bottom:60px;}
     <select id="rating-filter" onchange="setRatingFilter(this.value)">
       <option value="">All ratings</option>
       <option value="5">5 only</option>
-      <option value="4">4+</option>
       <option value="3">3+</option>
-      <option value="2">2+</option>
       <option value="1">1+</option>
       <option value="0">Unrated</option>
     </select>
@@ -452,9 +450,7 @@ main{padding-bottom:60px;}
     <select id="movie-rating-filter" onchange="setMovieRatingFilter(this.value)">
       <option value="">All ratings</option>
       <option value="5">5 only</option>
-      <option value="4">4+</option>
       <option value="3">3+</option>
-      <option value="2">2+</option>
       <option value="1">1+</option>
       <option value="0">Unrated</option>
     </select>
@@ -526,9 +522,7 @@ main{padding-bottom:60px;}
     <select id="book-rating-filter" onchange="setBookRatingFilter(this.value)">
       <option value="">All ratings</option>
       <option value="5">5 only</option>
-      <option value="4">4+</option>
       <option value="3">3+</option>
-      <option value="2">2+</option>
       <option value="1">1+</option>
       <option value="0">Unrated</option>
     </select>
@@ -618,7 +612,7 @@ main{padding-bottom:60px;}
     <div class="field">
       <label>Rating</label>
       <div class="rating-picker">
-        <input type="range" id="rf-rating" min="0" max="10" step="1" value="0" oninput="updateRatingPicker(this.value)">
+        <input type="range" id="rf-rating" min="0" max="3" step="1" value="0" oninput="updateRatingPicker(this.value)">
         <span id="rf-rating-label">Unrated</span>
       </div>
     </div>
@@ -715,7 +709,7 @@ main{padding-bottom:60px;}
     <div class="field">
       <label>Rating</label>
       <div class="rating-picker">
-        <input type="range" id="mf-rating" min="0" max="10" step="1" value="0" oninput="updateMovieRatingPicker(this.value)">
+        <input type="range" id="mf-rating" min="0" max="3" step="1" value="0" oninput="updateMovieRatingPicker(this.value)">
         <span id="mf-rating-label">Unrated</span>
       </div>
     </div>
@@ -794,7 +788,7 @@ main{padding-bottom:60px;}
     <div class="field">
       <label>Rating</label>
       <div class="rating-picker">
-        <input type="range" id="bk-rating" min="0" max="10" step="1" value="0" oninput="updateBookRatingPicker(this.value)">
+        <input type="range" id="bk-rating" min="0" max="3" step="1" value="0" oninput="updateBookRatingPicker(this.value)">
         <span id="bk-rating-label">Unrated</span>
       </div>
     </div>
@@ -1762,10 +1756,21 @@ function handleBookCoverClick(id) { openEditBookModal(id); }
 // ─────────────────────────────────────────
 let editingId = null;
 
-// Half-star rating: the range input carries half-star units (0-10); rating = value/2.
+// Rating is restricted to 1, 3 or 5 stars (plus unrated). The range input carries a
+// slider index (0-3) into RATING_STEPS; ratingStepIndex() maps a stored rating back to
+// the closest slider index (for legacy data saved under the old 0-5 half-star scale).
+const RATING_STEPS = [0, 1, 3, 5];
+function ratingStepIndex(rating) {
+  let best = 0, bestDiff = Infinity;
+  RATING_STEPS.forEach((step, i) => {
+    const diff = Math.abs(step - (rating || 0));
+    if (diff < bestDiff) { bestDiff = diff; best = i; }
+  });
+  return best;
+}
 function updateRatingPicker(v) {
-  const rating = (+v) / 2;
-  document.getElementById('rf-rating-label').textContent = rating > 0 ? (rating % 1 ? rating.toFixed(1) : rating) + ' / 5' : 'Unrated';
+  const rating = RATING_STEPS[+v];
+  document.getElementById('rf-rating-label').textContent = rating > 0 ? rating + ' / 5' : 'Unrated';
 }
 function resetRecordForm() {
   ['rf-title','rf-artist','rf-link','rf-artwork','rf-tags','rf-year'].forEach(id => document.getElementById(id).value = '');
@@ -1798,8 +1803,8 @@ function openEditModal(id) {
   document.getElementById('rf-type').value = r.type || 'album';
   document.getElementById('rf-owned').value = r.owned || 'no';
   document.getElementById('rf-year').value = r.year || '';
-  document.getElementById('rf-rating').value = (r.rating || 0) * 2;
-  updateRatingPicker((r.rating || 0) * 2);
+  document.getElementById('rf-rating').value = ratingStepIndex(r.rating || 0);
+  updateRatingPicker(ratingStepIndex(r.rating || 0));
   updateArtworkPreview();
   document.getElementById('record-modal-title').textContent = 'Edit Record';
   document.getElementById('rf-delete-btn').style.display = '';
@@ -1820,7 +1825,7 @@ function saveRecordForm() {
   const owned = document.getElementById('rf-owned').value || 'no';
   const yearRaw = document.getElementById('rf-year').value.trim();
   const year = yearRaw ? +yearRaw : null;
-  const rating = (+document.getElementById('rf-rating').value) / 2;
+  const rating = RATING_STEPS[+document.getElementById('rf-rating').value];
   if (!title || !link) { toast('Title and Apple Music link are required'); return; }
   if (editingId) {
     const r = db.records.find(x => x.id === editingId);
@@ -1915,8 +1920,8 @@ let editingMovieId = null;
 let mfImdbRating = null; // not user-editable — just carried from the last successful OMDb fetch through to save
 
 function updateMovieRatingPicker(v) {
-  const rating = (+v) / 2;
-  document.getElementById('mf-rating-label').textContent = rating > 0 ? (rating % 1 ? rating.toFixed(1) : rating) + ' / 5' : 'Unrated';
+  const rating = RATING_STEPS[+v];
+  document.getElementById('mf-rating-label').textContent = rating > 0 ? rating + ' / 5' : 'Unrated';
 }
 function updateMoviePosterPreview() {
   const url = document.getElementById('mf-poster').value.trim();
@@ -1968,8 +1973,8 @@ function openEditMovieModal(id) {
   document.getElementById('mf-owned').value = m.owned || 'no';
   document.getElementById('mf-last-viewed').value = m.lastViewedAt || '';
   document.getElementById('mf-rewatched').checked = !!m.rewatched;
-  document.getElementById('mf-rating').value = (m.rating || 0) * 2;
-  updateMovieRatingPicker((m.rating || 0) * 2);
+  document.getElementById('mf-rating').value = ratingStepIndex(m.rating || 0);
+  updateMovieRatingPicker(ratingStepIndex(m.rating || 0));
   updateMoviePosterPreview();
   mfImdbRating = m.imdbRating || null;
   updateImdbRatingHint();
@@ -1993,7 +1998,7 @@ function saveMovieForm() {
   const owned = document.getElementById('mf-owned').value || 'no';
   const lastViewedAt = document.getElementById('mf-last-viewed').value || '';
   const rewatched = document.getElementById('mf-rewatched').checked;
-  const rating = (+document.getElementById('mf-rating').value) / 2;
+  const rating = RATING_STEPS[+document.getElementById('mf-rating').value];
   if (!title || !streamingUrl) { toast('Title and Streaming Link are required'); return; }
   if (editingMovieId) {
     const m = movieDb.movies.find(x => x.id === editingMovieId);
@@ -2099,8 +2104,8 @@ function saveOmdbKey() {
 let editingBookId = null;
 
 function updateBookRatingPicker(v) {
-  const rating = (+v) / 2;
-  document.getElementById('bk-rating-label').textContent = rating > 0 ? (rating % 1 ? rating.toFixed(1) : rating) + ' / 5' : 'Unrated';
+  const rating = RATING_STEPS[+v];
+  document.getElementById('bk-rating-label').textContent = rating > 0 ? rating + ' / 5' : 'Unrated';
 }
 function updateBookCoverPreview() {
   const url = document.getElementById('bk-cover').value.trim();
@@ -2147,8 +2152,8 @@ function openEditBookModal(id) {
   document.getElementById('bk-last-read').value = b.lastReadAt || '';
   document.getElementById('bk-reread').checked = !!b.reread;
   setBookLanguages(b.language);
-  document.getElementById('bk-rating').value = (b.rating || 0) * 2;
-  updateBookRatingPicker((b.rating || 0) * 2);
+  document.getElementById('bk-rating').value = ratingStepIndex(b.rating || 0);
+  updateBookRatingPicker(ratingStepIndex(b.rating || 0));
   updateBookCoverPreview();
   document.getElementById('book-modal-title').textContent = 'Edit Book';
   document.getElementById('bk-delete-btn').style.display = '';
@@ -2167,7 +2172,7 @@ function saveBookForm() {
   const lastReadAt = document.getElementById('bk-last-read').value || '';
   const reread = document.getElementById('bk-reread').checked;
   const language = getBookLanguages();
-  const rating = (+document.getElementById('bk-rating').value) / 2;
+  const rating = RATING_STEPS[+document.getElementById('bk-rating').value];
   if (!title) { toast('Title is required'); return; }
   if (editingBookId) {
     const b = bookDb.books.find(x => x.id === editingBookId);
