@@ -1,6 +1,19 @@
 {
   "records": [
     {
+      "id": "vmttsvgz5oe9s",
+      "title": "The Boatman's Call",
+      "artist": "Nick Cave & The Bad Seeds",
+      "appleMusicUrl": "https://music.apple.com/us/album/the-boatmans-call-2011-remaster/1435934226?uo=4",
+      "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music118/v4/da/53/35/da533542-2691-7b0c-566d-1739428c5b49/5099909572959.jpg/1200x1200bb.jpg",
+      "tags": "",
+      "type": "album",
+      "owned": "no",
+      "year": 1997,
+      "rating": 5,
+      "addedAt": "2026-09-09"
+    },
+    {
       "id": "vmtrkoc7sznk4",
       "title": "Station to Station",
       "artist": "David Bowie",
