@@ -1,6 +1,19 @@
 {
   "records": [
     {
+      "id": "vmty89smkn2ot",
+      "title": "Never Mind The Bollocks",
+      "artist": "Sex Pistols",
+      "appleMusicUrl": "https://music.apple.com/it/album/never-mind-the-bollocks-heres-the-sex-pistols/1443347631",
+      "artworkUrl": "https://www.emp-online.it/dw/image/v2/BBQV_PRD/on/demandware.static/-/Sites-master-emp/default/dw468587ce/images/2/8/5/2/285240-emp.jpg?sfrm=png",
+      "tags": "",
+      "type": "album",
+      "owned": "no",
+      "year": 1977,
+      "rating": 0,
+      "addedAt": "2026-09-12"
+    },
+    {
       "id": "vmty6417vnqfn",
       "title": "Unplugged",
       "artist": "Eric Clapton",
