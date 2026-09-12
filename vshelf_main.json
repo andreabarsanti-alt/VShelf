@@ -1,6 +1,19 @@
 {
   "records": [
     {
+      "id": "vmty6417vnqfn",
+      "title": "Unplugged",
+      "artist": "Eric Clapton",
+      "appleMusicUrl": "https://music.apple.com/us/album/unplugged-deluxe-edition-live/1647261809?uo=4",
+      "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music122/v4/52/8b/d8/528bd887-f2c7-3e59-a100-b517e064d908/603497909032.jpg/1200x1200bb.jpg",
+      "tags": "",
+      "type": "album",
+      "owned": "cd",
+      "year": 1992,
+      "rating": 5,
+      "addedAt": "2026-09-12"
+    },
+    {
       "id": "vmttsvgz5oe9s",
       "title": "The Boatman's Call",
       "artist": "Nick Cave & The Bad Seeds",
