@@ -1,6 +1,19 @@
 {
   "records": [
     {
+      "id": "vmu7nlo52wlbk",
+      "title": "Nebraska",
+      "artist": "Bruce Springsteen",
+      "appleMusicUrl": "https://music.apple.com/us/album/nebraska/185798980?uo=4",
+      "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music114/v4/76/2d/e5/762de50e-0967-4d24-c4da-752164312cd2/074643835824.jpg/1200x1200bb.jpg",
+      "tags": "",
+      "type": "album",
+      "owned": "vinyl",
+      "year": 1982,
+      "rating": 5,
+      "addedAt": "2026-09-19"
+    },
+    {
       "id": "vmty89smkn2ot",
       "title": "Never Mind The Bollocks",
       "artist": "Sex Pistols",
