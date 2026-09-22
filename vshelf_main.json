@@ -1,6 +1,19 @@
 {
   "records": [
     {
+      "id": "vmud2vrt25gql",
+      "title": "Ride Lonesome",
+      "artist": "Beck",
+      "appleMusicUrl": "https://music.apple.com/us/album/ride-lonesome/6788956584?uo=4",
+      "artworkUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/06/e4/45/06e445e7-9c2d-2a52-99b5-b6aa6a35a307/26UMGIM84718.rgb.jpg/1200x1200bb.jpg",
+      "tags": "",
+      "type": "album",
+      "owned": "no",
+      "year": 2026,
+      "rating": 0,
+      "addedAt": "2026-09-22"
+    },
+    {
       "id": "vmu7nlo52wlbk",
       "title": "Nebraska",
       "artist": "Bruce Springsteen",
