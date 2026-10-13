@@ -1,6 +1,26 @@
 {
   "movies": [
     {
+      "id": "vmv74e3ewk6xk",
+      "title": "The Shining",
+      "posterUrl": "https://m.media-amazon.com/images/M/MV5BNmM5ZThhY2ItOGRjOS00NzZiLWEwYTItNDgyMjFkOTgxMmRiXkEyXkFqcGc@._V1_QL75_UX380_CR0,8,380,562_.jpg",
+      "tags": "Drama, Horror",
+      "service": "none",
+      "watched": "yes",
+      "year": 1980,
+      "streamingUrl": ".",
+      "imdbUrl": "https://www.imdb.com/title/tt0081505/",
+      "imdbRating": 8.4,
+      "rating": 5,
+      "director": "Stanley Kubrick",
+      "actors": "Jack Nicholson, Shelley Duvall, Danny Lloyd",
+      "format": "movie",
+      "owned": "no",
+      "lastViewedAt": "2026-10-13",
+      "rewatched": true,
+      "addedAt": "2026-10-13"
+    },
+    {
       "id": "vmv498iervydi",
       "title": "Naza",
       "posterUrl": "https://m.media-amazon.com/images/M/MV5BMzA5YjdhYTYtNmY5ZS00Mzg1LTkyNDItOGQ1YzQ1MDYzNWJlXkEyXkFqcGc@._V1_QL75_UY562_CR21,0,380,562_.jpg",
@@ -11,7 +31,7 @@
       "streamingUrl": ".",
       "imdbUrl": "https://www.imdb.com/title/tt44766123/",
       "imdbRating": 7.9,
-      "rating": 0,
+      "rating": 3,
       "director": "Yuval Abraham, Rachel Szor",
       "actors": "Yuval Abraham",
       "format": "movie",
