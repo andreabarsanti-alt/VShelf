@@ -266,7 +266,7 @@ main{padding-bottom:60px;}
 
 
 /* Rating — no star glyphs anywhere (dropped after repeated iOS/iPadOS home-screen Safari
-   rendering bugs). rating is restricted to 1, 3 or 5 (plus unrated), still settable
+   rendering bugs). Music rating is 1-5 (plus unrated); Movies/Books are 1, 3 or 5 (plus unrated), still settable
    via the slider below and still usable for filtering/sorting — grouped shelves (see
    .shelf-group below) are how a rating value is surfaced on the shelf itself now. */
 .rating-picker{display:flex; align-items:center; gap:12px; flex-wrap:wrap;}
@@ -371,7 +371,9 @@ main{padding-bottom:60px;}
     <select id="rating-filter" onchange="setRatingFilter(this.value)">
       <option value="">All ratings</option>
       <option value="5">5 only</option>
+      <option value="4">4+</option>
       <option value="3">3+</option>
+      <option value="2">2+</option>
       <option value="1">1+</option>
       <option value="0">Unrated</option>
     </select>
@@ -612,7 +614,7 @@ main{padding-bottom:60px;}
     <div class="field">
       <label>Rating</label>
       <div class="rating-picker">
-        <input type="range" id="rf-rating" min="0" max="3" step="1" value="0" oninput="updateRatingPicker(this.value)">
+        <input type="range" id="rf-rating" min="0" max="5" step="1" value="0" oninput="updateRatingPicker(this.value)">
         <span id="rf-rating-label">Unrated</span>
       </div>
     </div>
@@ -1768,8 +1770,14 @@ function ratingStepIndex(rating) {
   });
   return best;
 }
+// Music shelf: full 0-5 scale (0 = unrated). Movies and Books keep RATING_STEPS above.
+const MUSIC_RATING_STEPS = [0, 1, 2, 3, 4, 5];
+function musicRatingStepIndex(rating) {
+  const i = Math.round(rating || 0);
+  return Math.min(Math.max(i, 0), MUSIC_RATING_STEPS.length - 1);
+}
 function updateRatingPicker(v) {
-  const rating = RATING_STEPS[+v];
+  const rating = MUSIC_RATING_STEPS[+v];
   document.getElementById('rf-rating-label').textContent = rating > 0 ? rating + ' / 5' : 'Unrated';
 }
 function resetRecordForm() {
@@ -1803,8 +1811,8 @@ function openEditModal(id) {
   document.getElementById('rf-type').value = r.type || 'album';
   document.getElementById('rf-owned').value = r.owned || 'no';
   document.getElementById('rf-year').value = r.year || '';
-  document.getElementById('rf-rating').value = ratingStepIndex(r.rating || 0);
-  updateRatingPicker(ratingStepIndex(r.rating || 0));
+  document.getElementById('rf-rating').value = musicRatingStepIndex(r.rating || 0);
+  updateRatingPicker(musicRatingStepIndex(r.rating || 0));
   updateArtworkPreview();
   document.getElementById('record-modal-title').textContent = 'Edit Record';
   document.getElementById('rf-delete-btn').style.display = '';
@@ -1825,7 +1833,7 @@ function saveRecordForm() {
   const owned = document.getElementById('rf-owned').value || 'no';
   const yearRaw = document.getElementById('rf-year').value.trim();
   const year = yearRaw ? +yearRaw : null;
-  const rating = RATING_STEPS[+document.getElementById('rf-rating').value];
+  const rating = MUSIC_RATING_STEPS[+document.getElementById('rf-rating').value];
   if (!title || !link) { toast('Title and Apple Music link are required'); return; }
   if (editingId) {
     const r = db.records.find(x => x.id === editingId);
