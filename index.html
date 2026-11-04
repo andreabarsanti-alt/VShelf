@@ -266,7 +266,7 @@ main{padding-bottom:60px;}
 
 
 /* Rating — no star glyphs anywhere (dropped after repeated iOS/iPadOS home-screen Safari
-   rendering bugs). Music rating is 1-5 (plus unrated); Movies/Books are 1, 3 or 5 (plus unrated), still settable
+   rendering bugs). Music rating is 0.5-5 in half steps (plus unrated); Movies/Books are 1, 3 or 5 (plus unrated), still settable
    via the slider below and still usable for filtering/sorting — grouped shelves (see
    .shelf-group below) are how a rating value is surfaced on the shelf itself now. */
 .rating-picker{display:flex; align-items:center; gap:12px; flex-wrap:wrap;}
@@ -371,10 +371,15 @@ main{padding-bottom:60px;}
     <select id="rating-filter" onchange="setRatingFilter(this.value)">
       <option value="">All ratings</option>
       <option value="5">5 only</option>
+      <option value="4.5">4.5+</option>
       <option value="4">4+</option>
+      <option value="3.5">3.5+</option>
       <option value="3">3+</option>
+      <option value="2.5">2.5+</option>
       <option value="2">2+</option>
+      <option value="1.5">1.5+</option>
       <option value="1">1+</option>
+      <option value="0.5">0.5+</option>
       <option value="0">Unrated</option>
     </select>
     <select id="sort-select" onchange="setSortMode(this.value)">
@@ -614,7 +619,7 @@ main{padding-bottom:60px;}
     <div class="field">
       <label>Rating</label>
       <div class="rating-picker">
-        <input type="range" id="rf-rating" min="0" max="5" step="1" value="0" oninput="updateRatingPicker(this.value)">
+        <input type="range" id="rf-rating" min="0" max="10" step="1" value="0" oninput="updateRatingPicker(this.value)">
         <span id="rf-rating-label">Unrated</span>
       </div>
     </div>
@@ -1770,10 +1775,10 @@ function ratingStepIndex(rating) {
   });
   return best;
 }
-// Music shelf: full 0-5 scale (0 = unrated). Movies and Books keep RATING_STEPS above.
-const MUSIC_RATING_STEPS = [0, 1, 2, 3, 4, 5];
+// Music shelf: 0-5 scale in half-point steps (0 = unrated). Movies and Books keep RATING_STEPS above.
+const MUSIC_RATING_STEPS = [0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5];
 function musicRatingStepIndex(rating) {
-  const i = Math.round(rating || 0);
+  const i = Math.round((rating || 0) * 2);
   return Math.min(Math.max(i, 0), MUSIC_RATING_STEPS.length - 1);
 }
 function updateRatingPicker(v) {
